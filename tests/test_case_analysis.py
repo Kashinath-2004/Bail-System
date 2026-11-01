@@ -12,9 +12,11 @@ Tests:
 import unittest
 from pathlib import Path
 
+from src.extraction.deterministic_extractor import DeterministicLegalExtractor
 from src.extraction.entity_redactor import EntityRedactor
 from src.extraction.fuzzy_matcher import CodebookMatcher
-from src.extraction.regex_fallback import RegexLegalExtractor
+from src.extraction.schema import ExtractedCaseDetails
+from src.extraction.verifier import verify_and_build_field, verify_verbatim_quote
 from src.ingestion.text_extractor import extract_text_from_bytes, extract_text_from_string
 from src.legal_knowledge.bail_rules import get_bail_assessment
 from src.legal_knowledge.ipc_bns_mapper import bns_to_ipc, get_concordance_entry, ipc_to_bns
@@ -111,8 +113,11 @@ class TestPrivacyAndIngestion(unittest.TestCase):
         self.assertEqual(prov["line_num"], 3)
 
 
-class TestRegexLegalExtraction(unittest.TestCase):
-    """Test deterministic regex extraction."""
+class TestDeterministicLegalExtraction(unittest.TestCase):
+    """Test deterministic rule-based extraction and evidence verification."""
+
+    def setUp(self):
+        self.extractor = DeterministicLegalExtractor()
 
     def test_legal_headers_extraction(self):
         doc = extract_text_from_string(
@@ -122,13 +127,114 @@ class TestRegexLegalExtraction(unittest.TestCase):
             "Accused charged u/s 302, 34 of IPC\n"
             "Accused is in judicial custody."
         )
-        extractor = RegexLegalExtractor()
-        res = extractor.extract(doc)
-        self.assertIn("302", res.sections)
-        self.assertIn("34", res.sections)
-        self.assertEqual(res.district, "Pune")
-        self.assertEqual(res.state, "Maharashtra")
-        self.assertEqual(res.custody_status, "In Custody")
+        res = self.extractor.extract(doc)
+        self.assertIn("302", res.sections.value)
+        self.assertIn("34", res.sections.value)
+        self.assertEqual(res.district.value, "Pune")
+        self.assertEqual(res.state.value, "Maharashtra")
+        self.assertEqual(res.custody_status.value, "In Judicial Custody")
+        self.assertEqual(res.case_title.value, "State of Maharashtra versus Ramesh Kumar")
+        self.assertTrue(res.sections.verified)
+        self.assertIsNotNone(res.sections.evidence)
+
+    def test_empty_input_safety(self):
+        """Hard Rule: Empty input must yield None/missing, zero hardcoded defaults."""
+        doc = extract_text_from_string("")
+        res = self.extractor.extract(doc)
+        self.assertIsNone(res.case_title.value)
+        self.assertIsNone(res.case_number.value)
+        self.assertIsNone(res.state.value)
+        self.assertIsNone(res.state_code.value)
+        self.assertIsNone(res.district.value)
+        self.assertIsNone(res.sections.value)
+        self.assertEqual(res.case_title.confidence_level, "MISSING")
+        self.assertEqual(res.state.confidence_level, "MISSING")
+        self.assertEqual(res.district.confidence_level, "MISSING")
+        self.assertEqual(res.sections.confidence_level, "MISSING")
+
+    def test_sample_case1_lucknow_fixture(self):
+        """Regression test on Sample Case 1: Lucknow, UP Simple Hurt."""
+        fixture_path = Path(__file__).resolve().parent.parent / "sample_cases" / "case1_bailable_simple_hurt.txt"
+        with open(fixture_path, "r", encoding="utf-8") as f:
+            text = f.read()
+
+        doc = extract_text_from_string(text)
+        res = self.extractor.extract(doc)
+
+        self.assertIn("Rajesh Kumar Sharma", res.case_title.value)
+        self.assertIn("412 of 2016", res.case_number.value)
+        self.assertEqual(res.state.value, "Uttar Pradesh")
+        self.assertEqual(res.state_code.value, 13)
+        self.assertEqual(res.district.value, "Lucknow")
+        self.assertIn("323", res.sections.value)
+        self.assertIn("506 Part I", res.sections.value)
+        self.assertEqual(res.filing_year.value, 2016)
+        self.assertEqual(res.custody_status.value, "Not Arrested / On Personal Bond")
+
+    def test_sample_case2_bengaluru_fixture(self):
+        """Regression test on Sample Case 2: Bengaluru, Karnataka Cheating."""
+        fixture_path = Path(__file__).resolve().parent.parent / "sample_cases" / "case2_nonbailable_cheating.txt"
+        with open(fixture_path, "r", encoding="utf-8") as f:
+            text = f.read()
+
+        doc = extract_text_from_string(text)
+        res = self.extractor.extract(doc)
+
+        self.assertIn("Suresh Gowda", res.case_title.value)
+        self.assertIn("890 of 2019", res.case_number.value)
+        self.assertEqual(res.state.value, "Karnataka")
+        self.assertEqual(res.state_code.value, 3)
+        self.assertEqual(res.district.value, "Bengaluru")
+        self.assertIn("420", res.sections.value)
+        self.assertIn("406", res.sections.value)
+        self.assertIn("34", res.sections.value)
+        self.assertEqual(res.filing_year.value, 2019)
+        self.assertEqual(res.custody_status.value, "In Judicial Custody")
+
+    def test_sample_case3_indore_fixture(self):
+        """Regression test on Sample Case 3: Indore, MP Sessions Grievous Hurt."""
+        fixture_path = Path(__file__).resolve().parent.parent / "sample_cases" / "case3_mixed_multi_section.txt"
+        with open(fixture_path, "r", encoding="utf-8") as f:
+            text = f.read()
+
+        doc = extract_text_from_string(text)
+        res = self.extractor.extract(doc)
+
+        self.assertIn("Vikram Singh", res.case_title.value)
+        self.assertIn("205 of 2018", res.case_number.value)
+        self.assertEqual(res.state.value, "Madhya Pradesh")
+        self.assertEqual(res.state_code.value, 23)
+        self.assertEqual(res.district.value, "Indore")
+        self.assertIn("341", res.sections.value)
+        self.assertIn("323", res.sections.value)
+        self.assertIn("326", res.sections.value)
+        self.assertIn("34", res.sections.value)
+        self.assertEqual(res.case_type.value, "Sessions Case")
+        self.assertEqual(res.filing_year.value, 2018)
+
+    def test_anti_hallucination_verifier(self):
+        """Verification gate must reject values that do not appear in source text."""
+        source_text = "Court of JMFC, Lucknow, Uttar Pradesh. Case 100/2020."
+
+        # Truthful snippet
+        valid_good, start_g, end_g = verify_verbatim_quote("Court of JMFC, Lucknow", source_text)
+        self.assertTrue(valid_good)
+        self.assertGreaterEqual(start_g, 0)
+
+        # Hallucinated snippet
+        valid_bad, start_b, end_b = verify_verbatim_quote("Court of Sessions Judge, Pune, Maharashtra", source_text)
+        self.assertFalse(valid_bad)
+
+        # Verify field builder rejects hallucination
+        field_hallucinated = verify_and_build_field(
+            value="Pune",
+            evidence_snippet="Court of Sessions Judge, Pune, Maharashtra",
+            source_text=source_text,
+            must_contain_literal=True,
+        )
+        self.assertIsNone(field_hallucinated.value)
+        self.assertEqual(field_hallucinated.confidence_level, "MISSING")
+        self.assertFalse(field_hallucinated.verified)
 
 
 class TestSimilarCasesRetrieval(unittest.TestCase):
@@ -177,3 +283,4 @@ class TestFullAnalysisEndpoint(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

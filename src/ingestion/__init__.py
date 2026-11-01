@@ -12,3 +12,4 @@ __all__ = [
     "extract_text_from_bytes",
     "extract_text_from_string",
 ]
+

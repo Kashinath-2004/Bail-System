@@ -1,4 +1,9 @@
-"""Data models and schemas for case document extraction and review."""
+"""Data models and schemas for honest, evidence-backed case extraction.
+
+NO hardcoded defaults, mock values, or constant confidences.
+Every extracted value is wrapped with its supporting verbatim quote,
+exact character offsets, line/page references, and computed confidence score.
+"""
 
 from __future__ import annotations
 
@@ -6,47 +11,83 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
-class FieldProvenance(BaseModel):
-    """Origin and location of an extracted field in the source document."""
-    page_num: Optional[int] = None
-    line_num: Optional[int] = None
-    snippet: Optional[str] = None
-    confidence: float = 1.0
-    source_type: str = "extracted"  # 'extracted', 'inferred', 'rule_lookup', 'user_provided'
+class EvidenceSpan(BaseModel):
+    """Verbatim text snippet and exact location in the source document."""
+    snippet: str = Field(description="Exact verbatim excerpt from the document")
+    start_offset: int = Field(description="Character start index in raw document text")
+    end_offset: int = Field(description="Character end index in raw document text")
+    page_num: int = Field(default=1, description="1-based page number")
+    line_num: int = Field(default=1, description="1-based line number")
+    method: str = Field(
+        default="labeled_regex",
+        description="Extraction method: 'labeled_regex', 'pattern_regex', 'codebook_match', 'llm_verified', 'inferred'",
+    )
+
+
+class ExtractedField(BaseModel):
+    """A single extracted field with computed confidence, evidence, and verification state."""
+    value: Optional[Any] = None
+    confidence: Optional[float] = None  # 0.0 to 1.0; None if value is None
+    confidence_level: str = "MISSING"   # HIGH, MEDIUM, LOW, INFERRED, MISSING
+    evidence: Optional[EvidenceSpan] = None
+    verified: bool = False
+    is_inferred: bool = False
+    conflict_warning: Optional[str] = None
 
 
 class ExtractedCaseDetails(BaseModel):
-    """Structured case parameters extracted from document or user input."""
-    case_title: str = Field(default="State vs Unknown", description="Title of the case or parties")
-    case_number: Optional[str] = Field(default=None, description="Court case number or FIR number")
-    filing_year: int = Field(default=2024, description="Year of filing or incident")
-    
-    # Geographic & Court attributes
-    state: str = Field(default="Maharashtra", description="State name in India")
-    state_code: int = Field(default=1, description="DDL Codebook State ID (1-36)")
-    district: str = Field(default="Pune", description="District name")
-    dist_code: int = Field(default=1, description="DDL Codebook District ID")
-    court_name: str = Field(default="District and Sessions Court", description="Name of court")
-    court_no: int = Field(default=1, description="Court number / room")
-    
-    # Legal & Procedural attributes
-    act: str = Field(default="The Indian Penal Code", description="Governing Act (IPC or BNS)")
-    sections: List[str] = Field(default_factory=lambda: ["379"], description="List of primary charged sections")
-    bns_sections: List[str] = Field(default_factory=list, description="Equivalent BNS sections if IPC or vice-versa")
-    case_type: str = Field(default="Criminal Case", description="Case type description")
-    judge_position: str = Field(default="Civil Judge Junior Division", description="Designation of judge")
-    judge_tenure_months: float = Field(default=12.0, description="Estimated judge tenure at filing in months")
-    
-    # Case background
-    accused_count: int = Field(default=1, description="Number of accused persons")
-    custody_status: str = Field(default="Not Arrested", description="Custody status: In Custody, On Bail, Not Arrested")
-    case_summary: str = Field(default="", description="Plain-English summary of allegations")
-    
-    # Metadata, provenance and confidence
-    provenance: Dict[str, FieldProvenance] = Field(default_factory=dict)
-    field_confidences: Dict[str, float] = Field(default_factory=dict)
-    is_llm_extracted: bool = False
+    """Complete structured case record extracted from document text.
+
+    Zero hardcoded defaults: missing fields have value=None and confidence_level='MISSING'.
+    """
+    case_number: ExtractedField = Field(default_factory=ExtractedField)
+    case_title: ExtractedField = Field(default_factory=ExtractedField)
+    filing_date: ExtractedField = Field(default_factory=ExtractedField)  # ISO YYYY-MM-DD
+    filing_year: ExtractedField = Field(default_factory=ExtractedField)
+    court_name: ExtractedField = Field(default_factory=ExtractedField)
+    court_type: ExtractedField = Field(default_factory=ExtractedField)
+    state: ExtractedField = Field(default_factory=ExtractedField)
+    state_code: ExtractedField = Field(default_factory=ExtractedField)
+    district: ExtractedField = Field(default_factory=ExtractedField)
+    dist_code: ExtractedField = Field(default_factory=ExtractedField)
+    act: ExtractedField = Field(default_factory=ExtractedField)
+    sections: ExtractedField = Field(default_factory=ExtractedField)
+    bns_equivalents: Dict[str, Optional[str]] = Field(default_factory=dict)
+    accused_names: ExtractedField = Field(default_factory=ExtractedField)
+    accused_count: ExtractedField = Field(default_factory=ExtractedField)
+    custody_status: ExtractedField = Field(default_factory=ExtractedField)
+    case_type: ExtractedField = Field(default_factory=ExtractedField)
+    stage: ExtractedField = Field(default_factory=ExtractedField)
+    case_summary: ExtractedField = Field(default_factory=ExtractedField)
+    extraction_mode: str = "DETERMINISTIC_RULES"  # 'DETERMINISTIC_RULES' or 'HYBRID_LLM'
     is_pii_redacted: bool = False
-    extraction_warnings: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
 
     model_config = {"protected_namespaces": ()}
+
+    def to_flat_dict(self) -> Dict[str, Any]:
+        """Convert to a flat dictionary for legacy ML pipeline compatibility."""
+        return {
+            "case_number": self.case_number.value,
+            "case_title": self.case_title.value,
+            "filing_date": self.filing_date.value,
+            "filing_year": self.filing_year.value,
+            "court_name": self.court_name.value,
+            "court_type": self.court_type.value,
+            "state": self.state.value,
+            "state_code": self.state_code.value,
+            "district": self.district.value,
+            "dist_code": self.dist_code.value,
+            "act": self.act.value,
+            "sections": self.sections.value or [],
+            "bns_equivalents": self.bns_equivalents,
+            "accused_names": self.accused_names.value or [],
+            "accused_count": self.accused_count.value or 0,
+            "custody_status": self.custody_status.value,
+            "case_type": self.case_type.value,
+            "stage": self.stage.value,
+            "case_summary": self.case_summary.value,
+            "extraction_mode": self.extraction_mode,
+            "is_pii_redacted": self.is_pii_redacted,
+            "warnings": self.warnings,
+        }

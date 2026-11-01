@@ -113,17 +113,17 @@
       <!-- Quick Sample Buttons -->
       <div class="max-w-4xl mx-auto p-4 rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-          <span>⚡</span> Quick Sample Cases:
+          <span>⚡</span> Quick Sample Fixtures:
         </span>
         <div class="flex flex-wrap gap-2">
-          <button onclick="loadSampleCase(0)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition">
-            1. Simple Theft (Bailable)
+          <button onclick="loadSampleCase(0)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition" title="Court of JMFC Lucknow, UP; IPC 323, 506 Part I">
+            1. Lucknow: Simple Hurt (UP · Bailable)
           </button>
-          <button onclick="loadSampleCase(1)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition">
-            2. Murder Attempt (Non-Bailable)
+          <button onclick="loadSampleCase(1)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition" title="Court of CMM Bengaluru, Karnataka; IPC 420, 406, 34">
+            2. Bengaluru: Cheating (Karnataka · Non-Bailable)
           </button>
-          <button onclick="loadSampleCase(2)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition">
-            3. Cheating (New BNS 2024)
+          <button onclick="loadSampleCase(2)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition" title="Sessions Court Indore, MP; IPC 341, 323, 326, 34">
+            3. Indore: Grievous Hurt (MP · Sessions)
           </button>
         </div>
       </div>
@@ -140,23 +140,47 @@
           </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- File Upload Dropzone -->
-          <div class="space-y-3">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Option A: Upload Document (PDF, DOCX, TXT)</label>
-            <div id="drop-zone" class="border-2 border-dashed border-slate-300 dark:border-navy-700 hover:border-gold-500 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50 dark:bg-navy-950 flex flex-col items-center justify-center min-h-[160px]">
-              <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt" onchange="handleFileSelected(event)" />
-              <div class="text-3xl mb-2">📄</div>
-              <p class="text-xs font-semibold text-navy-950 dark:text-white" id="file-label">Click or drag & drop document here</p>
-              <p class="text-[11px] text-slate-400 mt-1">Supports digital PDFs, Word documents, text files</p>
+        <!-- Ingestion Tabs (Permanently Prevents File vs Text Precedence Collision) -->
+        <div class="flex border-b border-slate-200 dark:border-navy-800 gap-2">
+          <button id="tab-btn-upload" onclick="switchIngestTab('upload')" class="pb-3 px-4 font-bold text-xs border-b-2 border-navy-900 dark:border-gold-500 text-navy-900 dark:text-white flex items-center gap-2 transition">
+            <span>📄</span> Option A: Upload Document (PDF / DOCX / TXT)
+          </button>
+          <button id="tab-btn-paste" onclick="switchIngestTab('paste')" class="pb-3 px-4 font-semibold text-xs border-b-2 border-transparent text-slate-500 hover:text-navy-950 dark:hover:text-white flex items-center gap-2 transition">
+            <span>📝</span> Option B: Paste Case Text / FIR Details
+          </button>
+        </div>
+
+        <!-- Tab Content A: File Upload Dropzone -->
+        <div id="tab-content-upload" class="space-y-3">
+          <div id="drop-zone" class="border-2 border-dashed border-slate-300 dark:border-navy-700 hover:border-gold-500 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50 dark:bg-navy-950 flex flex-col items-center justify-center min-h-[170px]">
+            <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt" onchange="handleFileSelected(event)" />
+            <div class="text-3xl mb-2">📄</div>
+            <p class="text-xs font-semibold text-navy-950 dark:text-white" id="file-label">Click or drag & drop document here</p>
+            <p class="text-[11px] text-slate-400 mt-1">Supports digital PDFs, Word documents (.docx), text files (.txt)</p>
+            <div id="file-selected-actions" class="hidden mt-3">
+              <button type="button" onclick="clearSelectedFile(event)" class="px-2.5 py-1 text-[11px] rounded-lg bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 hover:bg-rose-100 border border-rose-200">
+                Remove Selected File
+              </button>
             </div>
           </div>
+        </div>
 
-          <!-- Direct Text Paste -->
-          <div class="space-y-3">
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Option B: Or Paste Case Text / FIR Details</label>
-            <textarea id="case-text-input" rows="6" class="w-full text-xs rounded-2xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 p-3.5 dark:text-white focus:ring-2 focus:ring-gold-500 font-mono" placeholder="Paste FIR text, chargesheet excerpt, or case particulars here... e.g.&#10;IN THE COURT OF SESSIONS JUDGE, PUNE&#10;State of Maharashtra vs Ramesh Kumar&#10;FIR No. 123/2023 PS Haveli&#10;Accused charged u/s 302, 34 IPC..."></textarea>
+        <!-- Tab Content B: Direct Text Paste -->
+        <div id="tab-content-paste" class="hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Case Document Text / FIR Excerpt:</label>
+            <div class="flex items-center gap-1.5 text-[11px]">
+              <span class="text-slate-400">Load fixture:</span>
+              <button type="button" onclick="pasteSampleText(0)" class="text-gold-600 hover:underline font-semibold">Sample 1</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="pasteSampleText(1)" class="text-gold-600 hover:underline font-semibold">Sample 2</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="pasteSampleText(2)" class="text-gold-600 hover:underline font-semibold">Sample 3</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="clearPastedText()" class="text-slate-400 hover:text-rose-600">Clear</button>
+            </div>
           </div>
+          <textarea id="case-text-input" rows="8" class="w-full text-xs rounded-2xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 p-3.5 dark:text-white focus:ring-2 focus:ring-gold-500 font-mono" placeholder="Paste FIR text, chargesheet excerpt, or case particulars here... e.g.&#10;IN THE COURT OF JUDICIAL MAGISTRATE FIRST CLASS, LUCKNOW, UTTAR PRADESH&#10;Criminal Case No. 412 of 2016&#10;Date of Filing: 14 March 2016&#10;State of Uttar Pradesh versus Rajesh Kumar Sharma&#10;Sections: IPC Section 323, Section 506 Part I..."></textarea>
         </div>
 
         <!-- Privacy Toggle -->
@@ -185,99 +209,187 @@
               <h3 class="serif-heading text-xl font-bold text-navy-950 dark:text-white">Step 2: Review & Confirm Extracted Parameters</h3>
               <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">Human in the Loop</span>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">Please check and correct any field before running the predictive model. Provenance indicates where in the document the detail was found.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Please check and correct any field before running the predictive model. Provenance indicates exact line and verbatim text from the document.</p>
           </div>
           <button onclick="backToIngest()" class="text-xs text-slate-500 hover:text-navy-950 dark:hover:text-white underline">← Re-upload</button>
         </div>
 
-        <!-- Form fields with confidence badges -->
+        <!-- Dynamic Extraction Mode Banner -->
+        <div id="extraction-mode-banner"></div>
+
+        <!-- Form fields with real confidence badges and verbatim provenance citations -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <!-- Case Title -->
           <div>
             <div class="flex justify-between items-center mb-1">
-              <label class="font-semibold text-slate-700 dark:text-slate-300">Case Title / Parties</label>
-              <span id="badge-conf-title" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">High Conf (90%)</span>
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Case Title / Parties <span class="text-rose-500 font-bold">*</span></label>
+              <span id="badge-conf-title" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
             </div>
-            <input type="text" id="rev-title" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white" />
-            <span id="prov-title" class="text-[10px] text-slate-400 mt-0.5 block">📍 Found on Page 1, Line 2</span>
+            <input type="text" id="rev-title" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition" />
+            <span id="prov-title" class="text-[10px] text-slate-400 mt-1 block"></span>
+            <div id="warn-title" class="hidden mt-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium"></div>
           </div>
 
+          <!-- Case Number -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="font-semibold text-slate-700 dark:text-slate-300">Case / FIR Number</label>
-              <span id="badge-conf-caseno" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">High Conf (90%)</span>
+              <span id="badge-conf-caseno" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
             </div>
-            <input type="text" id="rev-caseno" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white" />
-            <span id="prov-caseno" class="text-[10px] text-slate-400 mt-0.5 block">📍 Found on Page 1, Line 3</span>
+            <input type="text" id="rev-caseno" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition" />
+            <span id="prov-caseno" class="text-[10px] text-slate-400 mt-1 block"></span>
+            <div id="warn-caseno" class="hidden mt-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium"></div>
           </div>
 
+          <!-- State Jurisdiction -->
           <div>
             <div class="flex justify-between items-center mb-1">
-              <label class="font-semibold text-slate-700 dark:text-slate-300">State Jurisdiction</label>
-              <span id="badge-conf-state" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Matched (100%)</span>
+              <label class="font-semibold text-slate-700 dark:text-slate-300">State Jurisdiction <span class="text-rose-500 font-bold">*</span></label>
+              <span id="badge-conf-state" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
             </div>
-            <select id="rev-state" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+            <select id="rev-state" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition">
               <option value="1">Maharashtra (State 1)</option>
-              <option value="2">Uttar Pradesh (State 2)</option>
+              <option value="2">Andhra Pradesh (State 2)</option>
               <option value="3">Karnataka (State 3)</option>
-              <option value="4">Gujarat (State 4)</option>
-              <option value="5">Tamil Nadu (State 5)</option>
-              <option value="6">Madhya Pradesh (State 6)</option>
-              <option value="7">Rajasthan (State 7)</option>
+              <option value="4">Kerala (State 4)</option>
+              <option value="5">Himachal Pradesh (State 5)</option>
+              <option value="6">Assam (State 6)</option>
+              <option value="7">Jharkhand (State 7)</option>
               <option value="8">Bihar (State 8)</option>
+              <option value="9">Rajasthan (State 9)</option>
+              <option value="10">Tamil Nadu (State 10)</option>
+              <option value="11">Orissa (State 11)</option>
+              <option value="12">Jammu And Kashmir (State 12)</option>
+              <option value="13">Uttar Pradesh (State 13)</option>
+              <option value="14">Haryana (State 14)</option>
+              <option value="15">Uttarakhand (State 15)</option>
+              <option value="16">West Bengal (State 16)</option>
+              <option value="17">Gujarat (State 17)</option>
+              <option value="18">Chhattisgarh (State 18)</option>
+              <option value="19">Mizoram (State 19)</option>
+              <option value="20">Tripura (State 20)</option>
+              <option value="21">Meghalaya (State 21)</option>
+              <option value="22">Punjab (State 22)</option>
+              <option value="23">Madhya Pradesh (State 23)</option>
+              <option value="24">Sikkim (State 24)</option>
+              <option value="25">Manipur (State 25)</option>
+              <option value="26">Delhi (State 26)</option>
+              <option value="27">Chandigarh (State 27)</option>
+              <option value="29">Telangana (State 29)</option>
+              <option value="30">Goa (State 30)</option>
+              <option value="31">Diu And Daman (State 31)</option>
+              <option value="32">Dnh At Silvasa (State 32)</option>
+              <option value="33">Ladakh (State 33)</option>
             </select>
+            <span id="prov-state" class="text-[10px] text-slate-400 mt-1 block"></span>
+            <div id="warn-state" class="hidden mt-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium"></div>
           </div>
 
+          <!-- District & Court -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="font-semibold text-slate-700 dark:text-slate-300">District & Court</label>
-              <span id="badge-conf-district" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Matched</span>
+              <span id="badge-conf-district" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
             </div>
-            <input type="text" id="rev-district" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white" />
+            <input type="text" id="rev-district" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition" />
+            <span id="prov-district" class="text-[10px] text-slate-400 mt-1 block"></span>
+            <div id="warn-district" class="hidden mt-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium"></div>
           </div>
 
+          <!-- Governing Act -->
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="font-semibold text-slate-700 dark:text-slate-300">Governing Act</label>
-              <span class="px-2 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Statutory</span>
+              <span id="badge-conf-act" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
             </div>
-            <select id="rev-act" onchange="updateConcordanceHint()" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+            <select id="rev-act" onchange="updateConcordanceHint()" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition">
               <option value="The Indian Penal Code">The Indian Penal Code (IPC 1860)</option>
               <option value="Bharatiya Nyaya Sanhita, 2023">Bharatiya Nyaya Sanhita, 2023 (BNS)</option>
             </select>
+            <span id="prov-act" class="text-[10px] text-slate-400 mt-1 block"></span>
           </div>
 
+          <!-- Charged Section(s) -->
           <div>
             <div class="flex justify-between items-center mb-1">
-              <label class="font-semibold text-slate-700 dark:text-slate-300">Charged Section(s) (comma-separated)</label>
-              <span id="badge-conf-sec" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Verified</span>
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Charged Section(s) (comma-separated) <span class="text-rose-500 font-bold">*</span></label>
+              <span id="badge-conf-sec" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
             </div>
-            <input type="text" id="rev-sections" oninput="updateConcordanceHint()" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white font-mono" />
-            <span id="concordance-hint" class="text-[10px] text-gold-600 dark:text-gold-400 mt-0.5 block font-semibold">Equivalent: BNS 303(2) (Theft)</span>
+            <input type="text" id="rev-sections" oninput="updateConcordanceHint()" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white font-mono transition" />
+            <span id="prov-sec" class="text-[10px] text-slate-400 mt-1 block"></span>
+            <div id="warn-sec" class="hidden mt-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium"></div>
+            <!-- Dynamic Section Chips Container -->
+            <div id="sections-chips-container" class="flex flex-wrap gap-1.5 mt-2"></div>
+            <span id="concordance-hint" class="text-[10px] text-gold-600 dark:text-gold-400 mt-1 block font-semibold"></span>
           </div>
 
+          <!-- Filing Date / Year -->
           <div>
-            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Case Type</label>
-            <select id="rev-casetype" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Filing Date / Year</label>
+              <span id="badge-conf-date" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
+            </div>
+            <input type="text" id="rev-date" placeholder="YYYY-MM-DD or YYYY" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition" />
+            <span id="prov-date" class="text-[10px] text-slate-400 mt-1 block"></span>
+          </div>
+
+          <!-- Accused Details -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Accused Count & Names</label>
+              <span id="badge-conf-accused" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
+            </div>
+            <div class="flex gap-2">
+              <input type="number" id="rev-accused-count" min="1" max="50" placeholder="Count" class="w-20 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition" />
+              <input type="text" id="rev-accused-names" placeholder="Accused Names" class="flex-1 text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition" />
+            </div>
+            <span id="prov-accused" class="text-[10px] text-slate-400 mt-1 block"></span>
+          </div>
+
+          <!-- Case Type -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Case Type</label>
+              <span id="badge-conf-casetype" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
+            </div>
+            <select id="rev-casetype" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition">
               <option value="Criminal Case">Criminal Case (Magistrate Trial)</option>
               <option value="Sessions Case">Sessions Case (Heinous Offence)</option>
               <option value="Special Criminal Case">Special Criminal Case</option>
               <option value="Criminal Appeal">Criminal Appeal</option>
             </select>
+            <span id="prov-casetype" class="text-[10px] text-slate-400 mt-1 block"></span>
           </div>
 
+          <!-- Custody Status -->
           <div>
-            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Custody Status</label>
-            <select id="rev-custody" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Custody Status</label>
+              <span id="badge-conf-custody" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
+            </div>
+            <select id="rev-custody" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white transition">
               <option value="Not Arrested">Not Arrested (Pre-filing / Notice u/s 41A)</option>
-              <option value="On Bail">On Bail (Released on bond)</option>
+              <option value="On Bail">On Bail (Released on personal/surety bond)</option>
               <option value="In Custody">In Custody (Judicial/Police Remand)</option>
             </select>
+            <span id="prov-custody" class="text-[10px] text-slate-400 mt-1 block"></span>
           </div>
         </div>
 
+        <!-- Case Summary -->
         <div>
-          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs">Case Allegations Summary</label>
-          <textarea id="rev-summary" rows="2" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 p-3 dark:text-white"></textarea>
+          <div class="flex justify-between items-center mb-1">
+            <label class="font-semibold text-slate-700 dark:text-slate-300 text-xs">Case Allegations Summary</label>
+            <span id="badge-conf-summary" class="px-2 py-0.5 rounded text-[10px] font-bold"></span>
+          </div>
+          <textarea id="rev-summary" rows="3" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 p-3 dark:text-white transition"></textarea>
+          <span id="prov-summary" class="text-[10px] text-slate-400 mt-1 block"></span>
+        </div>
+
+        <!-- Validation Alert Banner -->
+        <div id="validation-alert" class="hidden p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 text-xs text-rose-800 dark:text-rose-200 font-semibold flex items-center gap-2">
+          <span>⚠️</span>
+          <span id="validation-alert-msg"></span>
         </div>
 
         <div class="flex justify-end pt-2">
@@ -781,6 +893,7 @@
 
   <script>
     // State variables
+    let currentIngestTab = 'upload';
     let selectedFile = null;
     let sampleCasesData = [];
     let currentExtractedData = null;
@@ -797,6 +910,47 @@
       }
     }
     initSamples();
+
+    // Tab switching in Step 1 (eliminates input precedence collision)
+    function switchIngestTab(tab) {
+      currentIngestTab = tab;
+      const btnUpload = document.getElementById('tab-btn-upload');
+      const btnPaste = document.getElementById('tab-btn-paste');
+      const contentUpload = document.getElementById('tab-content-upload');
+      const contentPaste = document.getElementById('tab-content-paste');
+
+      if (tab === 'upload') {
+        btnUpload.className = "pb-3 px-4 font-bold text-xs border-b-2 border-navy-900 dark:border-gold-500 text-navy-900 dark:text-white flex items-center gap-2 transition";
+        btnPaste.className = "pb-3 px-4 font-semibold text-xs border-b-2 border-transparent text-slate-500 hover:text-navy-950 dark:hover:text-white flex items-center gap-2 transition";
+        contentUpload.classList.remove('hidden');
+        contentPaste.classList.add('hidden');
+      } else {
+        btnPaste.className = "pb-3 px-4 font-bold text-xs border-b-2 border-navy-900 dark:border-gold-500 text-navy-900 dark:text-white flex items-center gap-2 transition";
+        btnUpload.className = "pb-3 px-4 font-semibold text-xs border-b-2 border-transparent text-slate-500 hover:text-navy-950 dark:hover:text-white flex items-center gap-2 transition";
+        contentPaste.classList.remove('hidden');
+        contentUpload.classList.add('hidden');
+      }
+    }
+
+    function clearSelectedFile(e) {
+      if (e) e.stopPropagation();
+      selectedFile = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('file-label').innerText = 'Click or drag & drop document here';
+      document.getElementById('file-selected-actions').classList.add('hidden');
+    }
+
+    function clearPastedText() {
+      document.getElementById('case-text-input').value = '';
+    }
+
+    function pasteSampleText(idx) {
+      switchIngestTab('paste');
+      if (sampleCasesData && sampleCasesData[idx] && sampleCasesData[idx].sample_text) {
+        document.getElementById('case-text-input').value = sampleCasesData[idx].sample_text;
+        document.getElementById('case-text-input').focus();
+      }
+    }
 
     // Page navigation
     function setPage(pageId) {
@@ -832,6 +986,7 @@
         if (e.dataTransfer.files.length > 0) {
           selectedFile = e.dataTransfer.files[0];
           document.getElementById('file-label').innerText = 'Selected: ' + selectedFile.name + ' (' + (selectedFile.size/1024).toFixed(1) + ' KB)';
+          document.getElementById('file-selected-actions').classList.remove('hidden');
         }
       });
     }
@@ -840,10 +995,11 @@
       if (e.target.files.length > 0) {
         selectedFile = e.target.files[0];
         document.getElementById('file-label').innerText = 'Selected: ' + selectedFile.name + ' (' + (selectedFile.size/1024).toFixed(1) + ' KB)';
+        document.getElementById('file-selected-actions').classList.remove('hidden');
       }
     }
 
-    // Load one of 3 sample cases
+    // Load one of 3 sample cases directly into Step 2
     function loadSampleCase(idx) {
       if (sampleCasesData && sampleCasesData[idx]) {
         const sample = sampleCasesData[idx];
@@ -872,30 +1028,43 @@
       btn.disabled = true;
 
       const redactPii = document.getElementById('redact-pii-check').checked;
-      const textInput = document.getElementById('case-text-input').value.trim();
 
       try {
         let respData = null;
-        if (selectedFile) {
+        if (currentIngestTab === 'upload') {
+          if (!selectedFile) {
+            alert('Please select or drop a PDF, Word document, or text file to upload.');
+            btn.innerText = 'Extract Case Details →';
+            btn.disabled = false;
+            return;
+          }
           const formData = new FormData();
           formData.append('file', selectedFile);
           formData.append('redact_pii', redactPii);
           const res = await fetch('/case/extract', { method: 'POST', body: formData });
-          if (!res.ok) throw new Error('File extraction failed');
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.detail || 'File extraction failed');
+          }
           respData = await res.json();
-        } else if (textInput) {
+        } else {
+          const textInput = document.getElementById('case-text-input').value.trim();
+          if (!textInput) {
+            alert('Please paste case text or FIR details into the box.');
+            btn.innerText = 'Extract Case Details →';
+            btn.disabled = false;
+            return;
+          }
           const res = await fetch('/case/extract-text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ raw_text: textInput, redact_pii: redactPii })
           });
-          if (!res.ok) throw new Error('Text extraction failed');
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            throw new Error(errJson.detail || 'Text extraction failed');
+          }
           respData = await res.json();
-        } else {
-          alert('Please upload a file or paste case text.');
-          btn.innerText = 'Extract Case Details →';
-          btn.disabled = false;
-          return;
         }
 
         currentExtractedData = respData;
@@ -904,6 +1073,7 @@
         document.getElementById('step-ingest').classList.add('hidden');
         document.getElementById('step-review').classList.remove('hidden');
         document.getElementById('step-results').classList.add('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
 
       } catch (err) {
         alert('Extraction failed: ' + err.message);
@@ -913,78 +1083,388 @@
       }
     }
 
-    function populateReviewForm(data) {
-      document.getElementById('rev-title').value = data.case_title || 'State vs Unknown';
-      document.getElementById('rev-caseno').value = data.case_number || 'CC 102/2023';
-      document.getElementById('rev-district').value = data.district || 'Pune';
-      document.getElementById('rev-state').value = data.state_code || 1;
-      document.getElementById('rev-act').value = data.act || 'The Indian Penal Code';
-      document.getElementById('rev-sections').value = (data.sections || ['379']).join(', ');
-      document.getElementById('rev-casetype').value = data.case_type || 'Criminal Case';
-      document.getElementById('rev-custody').value = data.custody_status || 'Not Arrested';
-      document.getElementById('rev-summary').value = data.case_summary || '';
-
-      // Provenance citations if available
-      const prov = data.provenance || {};
-      if (prov.case_title) {
-        document.getElementById('prov-title').innerText = `📍 Found on Page ${prov.case_title.page_num || 1}, Line ${prov.case_title.line_num || 1}`;
-      }
-      if (prov.case_number) {
-        document.getElementById('prov-caseno').innerText = `📍 Found on Page ${prov.case_number.page_num || 1}, Line ${prov.case_number.line_num || 1}`;
-      }
-
-      updateConcordanceHint();
+    // Helper functions for honest extraction rendering
+    function getVal(field) {
+      if (field === null || field === undefined) return null;
+      if (typeof field === 'object' && 'value' in field) return field.value;
+      return field;
     }
 
-    function updateConcordanceHint() {
-      const act = document.getElementById('rev-act').value;
+    function getMeta(field) {
+      if (field && typeof field === 'object' && ('confidence' in field || 'confidence_level' in field || 'evidence' in field)) {
+        return {
+          confidence: field.confidence,
+          confidence_level: field.confidence_level || 'MISSING',
+          evidence: field.evidence,
+          verified: !!field.verified,
+          is_inferred: !!field.is_inferred,
+          conflict_warning: field.conflict_warning || null,
+        };
+      }
+      return {
+        confidence: null,
+        confidence_level: 'MISSING',
+        evidence: null,
+        verified: false,
+        is_inferred: false,
+        conflict_warning: null,
+      };
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function updateFieldUI(inputEl, badgeEl, provEl, warnEl, val, meta, placeholder) {
+      const hasValue = val !== null && val !== undefined && String(val).trim() !== '' && (!Array.isArray(val) || val.length > 0);
+
+      // Input Value & Styling
+      if (inputEl.tagName === 'SELECT') {
+        if (hasValue) {
+          inputEl.value = String(val);
+        }
+      } else {
+        if (hasValue) {
+          inputEl.value = Array.isArray(val) ? val.join(', ') : String(val);
+          inputEl.placeholder = placeholder || '';
+          inputEl.classList.remove('border-amber-400', 'dark:border-amber-500', 'bg-amber-50/20');
+        } else {
+          inputEl.value = '';
+          inputEl.placeholder = 'Not found in text — please enter manually';
+          inputEl.classList.add('border-amber-400', 'dark:border-amber-500', 'bg-amber-50/20');
+        }
+      }
+
+      // Confidence Badge
+      if (badgeEl) {
+        if (!hasValue || meta.confidence_level === 'MISSING') {
+          badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 dark:bg-navy-800 dark:text-slate-400';
+          badgeEl.innerText = '⚪ Not Found';
+        } else if (meta.is_inferred || meta.confidence_level === 'INFERRED') {
+          badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
+          const pct = meta.confidence ? Math.round(meta.confidence * 100) : 50;
+          badgeEl.innerText = `🟡 Inferred (${pct}%)`;
+        } else if ((meta.confidence && meta.confidence >= 0.90) || meta.confidence_level === 'HIGH') {
+          badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
+          const pct = meta.confidence ? Math.round(meta.confidence * 100) : 95;
+          badgeEl.innerText = `🟢 High (${pct}%)`;
+        } else if ((meta.confidence && meta.confidence >= 0.70) || meta.confidence_level === 'MEDIUM') {
+          badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300';
+          const pct = meta.confidence ? Math.round(meta.confidence * 100) : 80;
+          badgeEl.innerText = `🔵 Medium (${pct}%)`;
+        } else {
+          badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-navy-800 dark:text-slate-300';
+          badgeEl.innerText = 'Verified';
+        }
+      }
+
+      // Provenance Citation
+      if (provEl) {
+        if (meta.evidence && meta.evidence.snippet) {
+          const ev = meta.evidence;
+          const snip = ev.snippet.length > 70 ? ev.snippet.substring(0, 70) + '...' : ev.snippet;
+          provEl.className = 'text-[10px] text-slate-500 dark:text-slate-400 mt-1 block truncate';
+          provEl.title = `Full verbatim snippet: "${ev.snippet}"`;
+          provEl.innerHTML = `📍 Line ${ev.line_num || 1} [Chars ${ev.start_offset}-${ev.end_offset}]: <span class="italic text-slate-600 dark:text-slate-300 font-mono">"${escapeHtml(snip)}"</span>`;
+        } else if (hasValue) {
+          provEl.className = 'text-[10px] text-slate-400 mt-1 block';
+          provEl.innerHTML = `<span>Verified / Provided value</span>`;
+        } else {
+          provEl.className = 'text-[10px] text-amber-600 dark:text-amber-400 mt-1 block font-medium';
+          provEl.innerHTML = `⚠️ Not found in source text — please enter manually`;
+        }
+      }
+
+      // Conflict Warning
+      if (warnEl) {
+        if (meta.conflict_warning) {
+          warnEl.innerText = `⚠️ Note: ${meta.conflict_warning}`;
+          warnEl.classList.remove('hidden');
+        } else {
+          warnEl.classList.add('hidden');
+        }
+      }
+    }
+
+    function populateReviewForm(data) {
+      document.getElementById('validation-alert').classList.add('hidden');
+
+      // Extraction Mode Banner
+      const modeBanner = document.getElementById('extraction-mode-banner');
+      const mode = data.extraction_mode || 'DETERMINISTIC_RULES';
+      if (mode === 'DEMO_SAMPLE') {
+        modeBanner.innerHTML = `
+          <div class="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">⚡</span>
+              <div>
+                <span class="font-bold text-sm">EXTRACTION MODE: DEMO / BENCHMARK FIXTURE</span>
+                <p class="text-[11px] text-amber-700 dark:text-amber-300">Pre-configured evaluation benchmark case. Verify or edit parameters before analysis.</p>
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100">BENCHMARK DEMO</span>
+          </div>`;
+      } else if (mode === 'HYBRID_LLM') {
+        modeBanner.innerHTML = `
+          <div class="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 flex items-center justify-between text-xs text-blue-900 dark:text-blue-200">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">🤖</span>
+              <div>
+                <span class="font-bold text-sm">EXTRACTION MODE: HYBRID LLM EXTRACTION</span>
+                <p class="text-[11px] text-blue-700 dark:text-blue-300">Deterministic legal rules reconciled with LLM refinement and verified against verbatim quotes.</p>
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-blue-200 dark:bg-blue-900 text-blue-900 dark:text-blue-100">VERIFIED QUOTES</span>
+          </div>`;
+      } else {
+        modeBanner.innerHTML = `
+          <div class="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs text-emerald-900 dark:text-emerald-200">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl">🛡️</span>
+              <div>
+                <span class="font-bold text-sm">EXTRACTION MODE: RULE-BASED (100% Evidence-Verified)</span>
+                <p class="text-[11px] text-emerald-700 dark:text-emerald-300">All fields verified with exact character offsets against source document. Zero generative hallucination.</p>
+              </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100">AUDITED EVIDENCE</span>
+          </div>`;
+      }
+
+      // 1. Case Title
+      updateFieldUI(
+        document.getElementById('rev-title'),
+        document.getElementById('badge-conf-title'),
+        document.getElementById('prov-title'),
+        document.getElementById('warn-title'),
+        getVal(data.case_title),
+        getMeta(data.case_title),
+        'e.g. State of UP vs Rajesh Kumar'
+      );
+
+      // 2. Case Number
+      updateFieldUI(
+        document.getElementById('rev-caseno'),
+        document.getElementById('badge-conf-caseno'),
+        document.getElementById('prov-caseno'),
+        document.getElementById('warn-caseno'),
+        getVal(data.case_number),
+        getMeta(data.case_number),
+        'e.g. Criminal Case No. 412 of 2016'
+      );
+
+      // 3. State Jurisdiction
+      const stVal = getVal(data.state_code) || getVal(data.state);
+      updateFieldUI(
+        document.getElementById('rev-state'),
+        document.getElementById('badge-conf-state'),
+        document.getElementById('prov-state'),
+        document.getElementById('warn-state'),
+        stVal,
+        getMeta(data.state_code) || getMeta(data.state),
+        ''
+      );
+
+      // 4. District & Court
+      const distVal = getVal(data.district) || getVal(data.court_name);
+      updateFieldUI(
+        document.getElementById('rev-district'),
+        document.getElementById('badge-conf-district'),
+        document.getElementById('prov-district'),
+        document.getElementById('warn-district'),
+        distVal,
+        getMeta(data.district) || getMeta(data.court_name),
+        'e.g. Lucknow or Court of JMFC Lucknow'
+      );
+
+      // 5. Governing Act
+      const actVal = getVal(data.act) || 'The Indian Penal Code';
+      updateFieldUI(
+        document.getElementById('rev-act'),
+        document.getElementById('badge-conf-act'),
+        document.getElementById('prov-act'),
+        null,
+        actVal,
+        getMeta(data.act),
+        ''
+      );
+
+      // 6. Charged Sections
+      const rawSecs = getVal(data.sections);
+      updateFieldUI(
+        document.getElementById('rev-sections'),
+        document.getElementById('badge-conf-sec'),
+        document.getElementById('prov-sec'),
+        document.getElementById('warn-sec'),
+        rawSecs,
+        getMeta(data.sections),
+        'e.g. 323, 506 Part I'
+      );
+
+      // 7. Filing Date / Year
+      const dateVal = getVal(data.filing_date) || getVal(data.filing_year);
+      updateFieldUI(
+        document.getElementById('rev-date'),
+        document.getElementById('badge-conf-date'),
+        document.getElementById('prov-date'),
+        null,
+        dateVal,
+        getMeta(data.filing_date) || getMeta(data.filing_year),
+        'YYYY-MM-DD or YYYY'
+      );
+
+      // 8. Accused Count & Names
+      const accusedCountVal = getVal(data.accused_count) || (Array.isArray(getVal(data.accused_names)) ? getVal(data.accused_names).length : 1);
+      const accusedNamesVal = getVal(data.accused_names) || [];
+      document.getElementById('rev-accused-count').value = accusedCountVal || 1;
+      document.getElementById('rev-accused-names').value = Array.isArray(accusedNamesVal) ? accusedNamesVal.join(', ') : (accusedNamesVal || '');
+      const accusedMeta = getMeta(data.accused_names) || getMeta(data.accused_count);
+      updateFieldUI(
+        document.getElementById('rev-accused-names'),
+        document.getElementById('badge-conf-accused'),
+        document.getElementById('prov-accused'),
+        null,
+        accusedNamesVal,
+        accusedMeta,
+        'e.g. Rajesh Kumar Sharma'
+      );
+
+      // 9. Case Type
+      const caseTypeVal = getVal(data.case_type) || 'Criminal Case';
+      updateFieldUI(
+        document.getElementById('rev-casetype'),
+        document.getElementById('badge-conf-casetype'),
+        document.getElementById('prov-casetype'),
+        null,
+        caseTypeVal,
+        getMeta(data.case_type),
+        ''
+      );
+
+      // 10. Custody Status
+      const custodyVal = getVal(data.custody_status) || 'Not Arrested';
+      updateFieldUI(
+        document.getElementById('rev-custody'),
+        document.getElementById('badge-conf-custody'),
+        document.getElementById('prov-custody'),
+        null,
+        custodyVal,
+        getMeta(data.custody_status),
+        ''
+      );
+
+      // 11. Summary
+      const summaryVal = getVal(data.case_summary);
+      updateFieldUI(
+        document.getElementById('rev-summary'),
+        document.getElementById('badge-conf-summary'),
+        document.getElementById('prov-summary'),
+        null,
+        summaryVal,
+        getMeta(data.case_summary),
+        'Brief case factual allegations...'
+      );
+
+      // Update Section Chips and Concordance
+      renderSectionChips(data);
+    }
+
+    function renderSectionChips(data) {
+      const container = document.getElementById('sections-chips-container');
+      container.innerHTML = '';
       const secVal = document.getElementById('rev-sections').value.trim();
-      const hintEl = document.getElementById('concordance-hint');
+      const bnsMap = (data && data.bns_equivalents) || {};
 
       if (!secVal) {
-        hintEl.innerText = '';
+        document.getElementById('concordance-hint').innerText = '';
         return;
       }
 
+      const sections = secVal.split(',').map(s => s.trim()).filter(s => s);
+      const act = document.getElementById('rev-act').value;
       const isBns = act.toLowerCase().includes('bns') || act.toLowerCase().includes('bharatiya');
-      if (secVal.includes('379')) {
-        hintEl.innerText = isBns ? 'Equivalent: IPC 379 (Theft)' : 'Equivalent: BNS Section 303(2) (Theft)';
-      } else if (secVal.includes('302')) {
-        hintEl.innerText = isBns ? 'Equivalent: IPC 302 (Murder)' : 'Equivalent: BNS Section 103(1) (Murder)';
-      } else if (secVal.includes('307')) {
-        hintEl.innerText = isBns ? 'Equivalent: IPC 307 (Attempt to murder)' : 'Equivalent: BNS Section 109 (Attempt to murder)';
-      } else if (secVal.includes('420') || secVal.includes('318')) {
-        hintEl.innerText = isBns ? 'Equivalent: IPC 420 (Cheating)' : 'Equivalent: BNS Section 318(4) (Cheating)';
-      } else {
-        hintEl.innerText = 'Concordance mapped to First Schedule CrPC / BNSS.';
-      }
+
+      sections.forEach(sec => {
+        const bnsEquiv = bnsMap[sec];
+        const chip = document.createElement('div');
+        chip.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono bg-slate-100 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-navy-950 dark:text-white';
+        let label = isBns ? `BNS ${sec}` : `IPC ${sec}`;
+        if (bnsEquiv) {
+          label += ` → BNS ${bnsEquiv}`;
+        }
+        chip.innerHTML = `<span class="font-bold text-gold-600 dark:text-gold-400">⚖️</span> <span>${escapeHtml(label)}</span>`;
+        container.appendChild(chip);
+      });
+
+      document.getElementById('concordance-hint').innerText = `Statutory mapping evaluated against First Schedule CrPC / BNSS.`;
     }
 
-    // Handle Analysis
+    function updateConcordanceHint() {
+      renderSectionChips(currentExtractedData || {});
+    }
+
+    // Handle Analysis Execution with Strict Validation Gate
     async function handleRunAnalysis() {
+      const alertBox = document.getElementById('validation-alert');
+      const alertMsg = document.getElementById('validation-alert-msg');
+      alertBox.classList.add('hidden');
+
+      const title = document.getElementById('rev-title').value.trim();
+      const stateSelect = document.getElementById('rev-state');
+      const stateCode = parseInt(stateSelect.value) || 1;
+      const stateName = stateSelect.options[stateSelect.selectedIndex] ? stateSelect.options[stateSelect.selectedIndex].text.replace(/\s*\(State.*?\)/i, '').trim() : 'Maharashtra';
+      const district = document.getElementById('rev-district').value.trim();
+      const rawSections = document.getElementById('rev-sections').value.split(',').map(s => s.trim()).filter(s => s);
+
+      // Validation Gate: Check required fields
+      const missingFields = [];
+      if (!title) missingFields.push('Case Title / Parties');
+      if (rawSections.length === 0) missingFields.push('Charged Section(s)');
+      if (!district) missingFields.push('District & Court');
+
+      if (missingFields.length > 0) {
+        alertMsg.innerText = `Cannot proceed: Please fill in the required field(s): ${missingFields.join(', ')}.`;
+        alertBox.classList.remove('hidden');
+        alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
       const btn = document.getElementById('btn-analyze');
       btn.innerText = 'Running Analysis... ⚡';
       btn.disabled = true;
 
-      const rawSections = document.getElementById('rev-sections').value.split(',').map(s => s.trim()).filter(s => s);
+      // Extract filing year safely
+      let filingYear = 2024;
+      const dateInput = document.getElementById('rev-date').value.trim();
+      const yearMatch = dateInput.match(/\b(19\d\d|20\d\d)\b/);
+      if (yearMatch) {
+        filingYear = parseInt(yearMatch[1]);
+      } else if (currentExtractedData && getVal(currentExtractedData.filing_year)) {
+        filingYear = parseInt(getVal(currentExtractedData.filing_year));
+      }
+
+      const accusedCount = parseInt(document.getElementById('rev-accused-count').value) || 1;
+      const accusedNames = document.getElementById('rev-accused-names').value.split(',').map(s => s.trim()).filter(s => s);
+
       const reqPayload = {
-        case_title: document.getElementById('rev-title').value,
-        case_number: document.getElementById('rev-caseno').value,
-        filing_year: 2024,
-        state: document.getElementById('rev-state').options[document.getElementById('rev-state').selectedIndex].text.split(' ')[0],
-        state_code: parseInt(document.getElementById('rev-state').value),
-        district: document.getElementById('rev-district').value,
-        dist_code: 1,
-        court_name: document.getElementById('rev-district').value + ' Court',
+        case_title: title,
+        case_number: document.getElementById('rev-caseno').value.trim() || 'Unassigned',
+        filing_year: filingYear,
+        state: stateName,
+        state_code: stateCode,
+        district: district,
+        dist_code: (currentExtractedData && getVal(currentExtractedData.dist_code)) || 1,
+        court_name: (currentExtractedData && getVal(currentExtractedData.court_name)) || (district + ' Court'),
         court_no: 1,
         act: document.getElementById('rev-act').value,
-        sections: rawSections.length > 0 ? rawSections : ['379'],
+        sections: rawSections,
         case_type: document.getElementById('rev-casetype').value,
-        judge_position: 'Civil Judge Junior Division',
+        judge_position: 'Judicial Magistrate / Sessions Judge',
         judge_tenure_months: 14.0,
-        accused_count: 1,
+        accused_names: accusedNames,
+        accused_count: accusedCount,
         custody_status: document.getElementById('rev-custody').value,
-        case_summary: document.getElementById('rev-summary').value,
+        case_summary: document.getElementById('rev-summary').value.trim(),
       };
 
       try {

@@ -260,3 +260,4 @@ def _extract_from_txt(txt_bytes: bytes, filename: str) -> ExtractedDocument:
 
     decoded = txt_bytes.decode("utf-8", errors="replace")
     return extract_text_from_string(decoded, filename=filename)
+

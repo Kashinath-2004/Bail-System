@@ -404,7 +404,15 @@ def normalize_section_number(raw_sec: str) -> str:
 def ipc_to_bns(ipc_section: str) -> Optional[StatutoryOffence]:
     """Retrieve BNS statutory concordance given an IPC section string."""
     norm = normalize_section_number(ipc_section)
-    return CONCORDANCE_TABLE.get(norm)
+    if norm in CONCORDANCE_TABLE:
+        return CONCORDANCE_TABLE[norm]
+
+    # Try matching base digits (e.g. 506 from 506 Part I or 304 from 304A)
+    m = re.match(r"^(\d+)", norm)
+    if m and m.group(1) in CONCORDANCE_TABLE:
+        return CONCORDANCE_TABLE[m.group(1)]
+
+    return None
 
 
 def bns_to_ipc(bns_section: str) -> Optional[StatutoryOffence]:
@@ -434,3 +442,4 @@ def get_concordance_entry(section_str: str, act_hint: str = "") -> Optional[Stat
     if entry:
         return entry
     return bns_to_ipc(section_str)
+

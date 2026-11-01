@@ -15,3 +15,4 @@ __all__ = [
     "HistoricalCaseRecord",
     "retrieve_similar_cases",
 ]
+

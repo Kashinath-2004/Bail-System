@@ -1,7 +1,8 @@
-"""LLM Client for structured case extraction with graceful offline fallback.
+"""Hybrid extraction engine combining deterministic rules with optional LLM refinement.
 
-Uses Google Gemini (via google-generativeai) when an API key is available in the environment,
-and falls back transparently to RegexLegalExtractor for zero-cost, fully offline local execution.
+Layer 1: Deterministic rules (regex + keyword + codebook) - runs first, fast & exact.
+Layer 2: LLM structured extraction (only for fields rules could not fill) with strict JSON schema.
+Layer 3: Reconciliation & Anti-Hallucination verification gate (prefers rules, verifies quotes).
 """
 
 from __future__ import annotations
@@ -12,43 +13,35 @@ import os
 import re
 from typing import Optional
 
+from src.extraction.deterministic_extractor import DeterministicLegalExtractor
 from src.extraction.fuzzy_matcher import CodebookMatcher
-from src.extraction.regex_fallback import RegexLegalExtractor
-from src.extraction.schema import ExtractedCaseDetails, FieldProvenance
+from src.extraction.schema import ExtractedCaseDetails, ExtractedField
+from src.extraction.verifier import verify_and_build_field
 from src.ingestion.text_extractor import ExtractedDocument
-from src.legal_knowledge.ipc_bns_mapper import get_concordance_entry
 
 logger = logging.getLogger(__name__)
 
+LLM_SCHEMA_PROMPT = """You are a legal document parsing system for Indian court filings.
+Analyze the provided document and extract missing parameters into JSON.
 
-EXTRACTION_PROMPT_TEMPLATE = """You are a senior Indian legal assistant. Extract the structured legal attributes from the provided Indian court/police document.
+CRITICAL CONSTRAINTS:
+1. Return null if a detail is not explicitly stated in the text. NEVER guess or invent.
+2. For EVERY non-null value, you MUST provide the exact verbatim quote from the text in "evidence_snippet".
+3. For case_allegations_summary: write 3-4 factual, objective sentences summarizing ONLY what is stated in the document.
 
-Return ONLY a valid JSON object matching this exact schema:
+Output format (valid JSON only):
 {
-  "case_title": "Parties or title, e.g. State of Maharashtra vs Ramesh Kumar",
-  "case_number": "FIR number or court case number, e.g. FIR No. 102/2023 or CC 45/2022",
-  "filing_year": 2023,
-  "state": "State name, e.g. Maharashtra",
-  "district": "District name, e.g. Pune",
-  "court_name": "Court name, e.g. Court of Sessions Judge",
-  "act": "The Indian Penal Code or Bharatiya Nyaya Sanhita, 2023",
-  "sections": ["302", "34"],
-  "case_type": "Criminal Case or Sessions Case",
-  "judge_position": "Civil Judge Junior Division or Chief Judicial Magistrate or Sessions Judge",
-  "accused_count": 1,
-  "custody_status": "In Custody or On Bail or Not Arrested",
-  "case_summary": "2-3 sentences plain language summary of the allegations and procedural posture.",
-  "snippets": {
-    "case_number": "exact text snippet where case number was found",
-    "sections": "exact text snippet where sections were found",
-    "court_name": "exact text snippet where court was found"
-  }
+  "case_number": {"value": string or null, "evidence_snippet": string or null},
+  "filing_date": {"value": "YYYY-MM-DD" or null, "evidence_snippet": string or null},
+  "court_name": {"value": string or null, "evidence_snippet": string or null},
+  "state": {"value": string or null, "evidence_snippet": string or null},
+  "district": {"value": string or null, "evidence_snippet": string or null},
+  "act": {"value": string or null, "evidence_snippet": string or null},
+  "sections": {"value": [string] or null, "evidence_snippet": string or null},
+  "accused_names": {"value": [string] or null, "evidence_snippet": string or null},
+  "custody_status": {"value": string or null, "evidence_snippet": string or null},
+  "case_allegations_summary": {"value": string or null, "evidence_snippet": string or null}
 }
-
-Important Instructions:
-- For sections, extract only the section numbers/identifiers (e.g. ["379"] or ["420", "120B"]).
-- If a detail is not explicitly mentioned, provide a reasonable inference or leave null.
-- Do NOT hallucinate dates or facts not in the document.
 
 DOCUMENT TEXT:
 \"\"\"
@@ -58,11 +51,11 @@ DOCUMENT TEXT:
 
 
 class CaseExtractionEngine:
-    """Hybrid LLM + Rule-based case extraction engine."""
+    """Hybrid 3-layer case extraction engine."""
 
     def __init__(self, matcher: Optional[CodebookMatcher] = None):
         self.matcher = matcher or CodebookMatcher()
-        self.regex_extractor = RegexLegalExtractor(self.matcher)
+        self.rule_extractor = DeterministicLegalExtractor(self.matcher)
         self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self._gemini_configured = False
         if self.api_key:
@@ -74,115 +67,105 @@ class CaseExtractionEngine:
                 logger.warning("Failed to configure Google Generative AI: %s", exc)
 
     def extract(self, doc: ExtractedDocument) -> ExtractedCaseDetails:
-        """Extract structured case details from ExtractedDocument.
-
-        Tries LLM if API key is present; otherwise uses deterministic regex extraction.
-        """
-        if self._gemini_configured:
-            try:
-                return self._extract_with_gemini(doc)
-            except Exception as exc:
-                logger.warning("Gemini extraction failed (%s). Falling back to regex extractor.", exc)
-
-        # Offline / deterministic fallback
-        extracted = self.regex_extractor.extract(doc)
-        if not self._gemini_configured:
-            extracted.extraction_warnings.append(
-                "Offline rule-based extractor used. Add GEMINI_API_KEY for advanced LLM extraction."
+        """Run 3-layer extraction: Rules -> LLM (if needed and available) -> Reconciliation."""
+        text = doc.raw_text.strip()
+        if not text:
+            # Empty input -> return all nulls immediately per Hard Rule 1
+            return ExtractedCaseDetails(
+                extraction_mode="DETERMINISTIC_RULES",
+                warnings=["Input document was empty."],
             )
-        return extracted
 
-    def _extract_with_gemini(self, doc: ExtractedDocument) -> ExtractedCaseDetails:
-        """Call Gemini to extract structured case details."""
+        # Layer 1: Deterministic rules (always runs first)
+        details = self.rule_extractor.extract(doc)
+
+        # Check which critical fields are still missing
+        missing_critical = (
+            details.case_number.value is None
+            or details.sections.value is None
+            or details.case_summary.value is None
+            or details.state.value is None
+            or details.district.value is None
+        )
+
+        # Layer 2: LLM refinement only if Gemini configured and fields missing
+        if self._gemini_configured and missing_critical:
+            try:
+                details = self._refine_with_llm(doc, details)
+                details.extraction_mode = "HYBRID_LLM"
+            except Exception as exc:
+                logger.warning("LLM refinement failed: %s. Using rule-based extraction.", exc)
+                details.warnings.append(f"LLM refinement skipped: {exc}")
+
+        return details
+
+    def _refine_with_llm(
+        self, doc: ExtractedDocument, current: ExtractedCaseDetails
+    ) -> ExtractedCaseDetails:
+        """Query Gemini with strict JSON schema and anti-hallucination verification."""
         import google.generativeai as genai
 
-        # Truncate to first 6000 chars if document is huge to avoid token bloat
-        truncated_text = doc.raw_text[:6000]
-        prompt = EXTRACTION_PROMPT_TEMPLATE.format(document_text=truncated_text)
+        text = doc.raw_text
+        prompt = LLM_SCHEMA_PROMPT.format(document_text=text[:6000])
 
         model = genai.GenerativeModel("gemini-1.5-flash")
         response = model.generate_content(
             prompt,
-            generation_config={"response_mime_type": "application/json"},
+            generation_config={
+                "temperature": 0.0,
+                "response_mime_type": "application/json",
+            },
         )
         data = json.loads(response.text)
 
-        # Match state and district to DDL codes
-        raw_state = data.get("state") or ""
-        state_code, canonical_state, state_conf = self.matcher.match_state(raw_state)
+        # Helper to reconcile and verify
+        def _reconcile(field_name: str, current_field: ExtractedField, is_list: bool = False) -> ExtractedField:
+            llm_item = data.get(field_name) or {}
+            val = llm_item.get("value")
+            snippet = llm_item.get("evidence_snippet")
 
-        raw_dist = data.get("district") or ""
-        dist_code, canonical_dist, dist_conf = self.matcher.match_district(raw_dist, state_code=state_code)
+            if current_field.value is not None:
+                # Rule has a value. Check for conflict
+                if val is not None and str(val).lower() != str(current_field.value).lower():
+                    current_field.conflict_warning = f"Rules found '{current_field.value}'; LLM suggested '{val}'."
+                return current_field
 
-        canonical_type, type_conf = self.matcher.canonicalize_case_type(data.get("case_type") or "")
-        canonical_judge, judge_conf = self.matcher.canonicalize_judge_position(data.get("judge_position") or "")
+            # Rule was missing, try LLM value through verifier
+            if val is not None and snippet:
+                verified = verify_and_build_field(
+                    value=val,
+                    evidence_snippet=snippet,
+                    source_text=text,
+                    method="llm_verified",
+                    must_contain_literal=True,
+                )
+                if verified.verified:
+                    return verified
 
-        # Sections & BNS mapping
-        raw_sections = data.get("sections") or ["379"]
-        clean_sections = []
-        for s in raw_sections:
-            clean_s = re.sub(r"[^\w\d]", "", str(s)).upper()
-            if clean_s:
-                clean_sections.append(clean_s)
+            return current_field
 
-        act = data.get("act") or "The Indian Penal Code"
-        is_bns_act = "bns" in act.lower() or "bharatiya" in act.lower()
-        bns_sections = []
-        for s in clean_sections:
-            entry = get_concordance_entry(s, act_hint=act)
-            if entry:
-                if is_bns_act:
-                    bns_sections.append(f"IPC {entry.ipc_section}")
-                else:
-                    bns_sections.append(f"BNS {entry.bns_section}")
+        # Reconcile missing fields
+        current.case_number = _reconcile("case_number", current.case_number)
+        current.filing_date = _reconcile("filing_date", current.filing_date)
+        current.court_name = _reconcile("court_name", current.court_name)
+        current.state = _reconcile("state", current.state)
+        current.district = _reconcile("district", current.district)
+        current.act = _reconcile("act", current.act)
+        current.sections = _reconcile("sections", current.sections, is_list=True)
+        current.accused_names = _reconcile("accused_names", current.accused_names, is_list=True)
+        current.custody_status = _reconcile("custody_status", current.custody_status)
 
-        # Provenance
-        snippets = data.get("snippets") or {}
-        provenance = {}
-        for k, snip in snippets.items():
-            if snip:
-                prov = doc.find_provenance(snip)
-                if prov:
-                    provenance[k] = FieldProvenance(
-                        page_num=prov["page_num"],
-                        line_num=prov["line_num"],
-                        snippet=snip,
-                        confidence=0.95,
-                        source_type="llm_extracted",
-                    )
+        # Summary reconciliation
+        if current.case_summary.value is None:
+            sum_item = data.get("case_allegations_summary") or {}
+            val_sum = sum_item.get("value")
+            if val_sum:
+                current.case_summary = verify_and_build_field(
+                    value=val_sum,
+                    evidence_snippet=sum_item.get("evidence_snippet") or val_sum[:100],
+                    source_text=text,
+                    method="llm_verified",
+                    must_contain_literal=False,
+                )
 
-        confidences = {
-            "case_number": 0.95 if data.get("case_number") else 0.5,
-            "sections": 0.95,
-            "state": state_conf,
-            "district": dist_conf,
-            "court_name": 0.9,
-            "case_type": type_conf,
-            "judge_position": judge_conf,
-        }
-
-        return ExtractedCaseDetails(
-            case_title=data.get("case_title") or "State vs Unknown",
-            case_number=data.get("case_number"),
-            filing_year=data.get("filing_year") or 2024,
-            state=canonical_state,
-            state_code=state_code,
-            district=canonical_dist,
-            dist_code=dist_code,
-            court_name=data.get("court_name") or f"{canonical_dist} Court",
-            court_no=1,
-            act=act,
-            sections=clean_sections,
-            bns_sections=bns_sections,
-            case_type=canonical_type,
-            judge_position=canonical_judge,
-            judge_tenure_months=12.0,
-            accused_count=data.get("accused_count") or 1,
-            custody_status=data.get("custody_status") or "Not Arrested",
-            case_summary=data.get("case_summary") or "",
-            provenance=provenance,
-            field_confidences=confidences,
-            is_llm_extracted=True,
-            is_pii_redacted=False,
-            extraction_warnings=list(doc.warnings),
-        )
+        return current

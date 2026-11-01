@@ -80,3 +80,4 @@ class EntityRedactor:
             text = pat.sub(_rep_name, text)
 
         return text, counts
+

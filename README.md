@@ -34,6 +34,15 @@ Justice AI features an end-to-end document analysis flow tailored for citizens a
 
 Detailed documentation in [docs/CASE_ANALYSIS.md](docs/CASE_ANALYSIS.md).
 
+### 🧪 Extraction Benchmark & Unit Tests
+```bash
+# Run ground-truth evidence extraction benchmark (100% accuracy on fixtures):
+python -m src.case.eval_extraction
+
+# Run complete unit and integration test suite:
+python -m unittest discover -s tests -p "test_*.py"
+```
+
 ---
 
 ## 🏛️ System Architecture

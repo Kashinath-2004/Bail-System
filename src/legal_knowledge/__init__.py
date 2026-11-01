@@ -24,3 +24,4 @@ __all__ = [
     "BailAssessment",
     "get_bail_assessment",
 ]
+

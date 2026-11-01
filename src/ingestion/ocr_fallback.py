@@ -73,3 +73,4 @@ def ocr_pdf_bytes(pdf_bytes: bytes) -> Tuple[List[str], List[str]]:
         warnings.append(f"OCR processing failed: {exc}")
 
     return page_texts, warnings
+

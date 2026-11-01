@@ -31,3 +31,4 @@ Under Indian criminal procedural jurisprudence, when an accused is charged under
 In accordance with judicial principles:
 - Bail timelines cannot and must not be simulated or fabricated as a predicted number of days or certainty of release.
 - Timelines provided by Justice AI represent standard statutory procedural stages (filing, notice to IO/PP, production of case diary, arguments, order) to inform citizens of the legal process.
+
