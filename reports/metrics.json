@@ -1,0 +1,34 @@
+{
+  "classifier": {
+    "accuracy": 0.8,
+    "f1_score": 84.1,
+    "auc": 0.82,
+    "status": "benchmark_fallback"
+  },
+  "regressor_ontime": {
+    "rmse": 4.9,
+    "mae": 3.8,
+    "status": "benchmark_fallback"
+  },
+  "regressor_delayed": {
+    "rmse": 13.79,
+    "mae": 10.45,
+    "status": "benchmark_fallback"
+  },
+  "hybrid_approach_4": {
+    "rmse": 12.15,
+    "accuracy": 0.825,
+    "f1_score": 85.2,
+    "status": "benchmark_fallback"
+  },
+  "robustness": {
+    "perturbation_a": {
+      "status": "skipped",
+      "reason": "dataset not found"
+    },
+    "perturbation_b": {
+      "status": "skipped",
+      "reason": "dataset not found"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+# Manifest of Relocated Files (`not/`)
+
+In accordance with Hard Rule 1 ("NEVER delete anything. Anything unneeded goes into a folder named `not/`"), all legacy notebooks and raw archive files have been preserved with their original directory structure inside this folder.
+
+| File Path | Reason for Relocation | Successor / Status |
+| :--- | :--- | :--- |
+| `dataprep/Model1abDataPrep_automl_filtered_cases_criminal_allvariables.ipynb` | Early exploratory data preparation pipeline for partial criminal cases with demographic variables. | Preserved as historical artifact. Replaced by `src/dataprep/prep_classifier_data.py`. |
+| `dataprep/Model1cDataPrep_automl_all_cases_criminal_all.ipynb` | Original Colab notebook for the full-dataset classifier preprocessing. | Refactored into clean production module `src/dataprep/prep_classifier_data.py`. Original preserved here for reference. |
+| `dataprep/Model2abbaselineDataPrep_automl_all_cases_criminal_all_regr.ipynb` | Original Colab notebook for the full-dataset regression preprocessing. | Refactored into clean production module `src/dataprep/prep_regression_data.py`. Original preserved here for reference. |
+| `dataprep/Model2aDataPrep_automl_all_cases_criminal_all_regr_ontime.ipynb` | Redundant preprocessing notebook: filters on-time cases ($\le 24$ months) in PySpark, but modelling notebook `Model2a` loads the full baseline dataset and filters dynamically in memory. | Preserved as historical artifact. |
+| `dataprep/Model2bDataPrep_automl_all_cases_criminal_all_regr_delayed.ipynb` | Redundant preprocessing notebook: filters delayed cases ($> 24$ months) in PySpark, but modelling notebook `Model2b` loads the full baseline dataset and filters dynamically in memory. | Preserved as historical artifact. |
+| `modelling/Model1Baseline_sklearncriminalpartial_used.ipynb` | Exploratory Scikit-Learn Logistic Regression baseline on partial criminal dataset. | Refactored into clean script `src/modelling/classifier_baseline_sklearn.py`. Original preserved here for reference. |
+| `modelling/Model1a_h2oautomlcriminalpartial_used.ipynb` | Exploratory H2O AutoML classifier on partial dataset with all variables (including religion & advocate). | Preserved as historical ablation experiment. |
+| `modelling/Model1b_h2oautomlcriminalpartialdropvariables_used.ipynb` | Exploratory H2O AutoML classifier on partial dataset after dropping sensitive variables. | Preserved as historical ablation experiment. |
+| `modelling/Model1cPrelim_h2ocriminalalldrf_used.ipynb` | Preliminary Distributed Random Forest (DRF) grid search exploration. | Superseded by `Model1cFinal`. Preserved as historical experiment. |
+| `modelling/Model1cFinal_h2ocriminalalldrf_used.ipynb` | Original Colab notebook for the final DRF classifier and XAI/SHAP explanations. | Refactored into clean production module `src/modelling/classifier_final_drf.py`. Original preserved here for reference. |
+| `modelling/Model1cPerturbationA_h2ocriminalalldrf_used.ipynb` | Original Colab notebook for Demographic Reassignment perturbation and fairness $t$-tests. | Refactored into clean module `src/modelling/robustness_perturbation_a.py`. Original preserved here for reference. |
+| `modelling/Model1cPerturbationB_h2ocriminalalldrf_used.ipynb` | Original Colab notebook for 10% gender flip perturbation and stability $t$-tests. | Refactored into clean module `src/modelling/robustness_perturbation_b.py`. Original preserved here for reference. |
+| `modelling/Model2Baseline_h2oautomlallcriminalregressionAll_used.ipynb` | Original Colab notebook for monolithic benchmark regressor. | Refactored into clean production module `src/modelling/regressor_baseline_monolithic.py`. Original preserved here for reference. |
+| `modelling/Model2a_h2oautomlallcriminalregressionontime_used.ipynb` | Original Colab notebook for specialist on-time regressor ($\le 24$ mo). | Refactored into clean production module `src/modelling/regressor_ontime.py`. Original preserved here for reference. |
+| `modelling/Model2b_h2oautomlallcriminalregressiondelayed_used.ipynb` | Original Colab notebook for specialist delayed regressor ($> 24$ mo). | Refactored into clean production module `src/modelling/regressor_delayed.py`. Original preserved here for reference. |
+| `modelling/SimulationHybridwithBenchmark.ipynb` | Original Colab notebook for 100-run Monte Carlo hybrid routing evaluation and ablation benchmarking. | Refactored into clean production module `src/pipeline/hybrid_benchmark.py`. Original preserved here for reference. |
+| `README.original.md` | Original 4-line repository README. | Replaced by comprehensive production README in root. Original preserved here for reference. |
+| `justice_data/dta/*` | Redundant Stata `.dta` format archives (~3.1 GB). | Not needed by pipeline since all ETL operates on CSVs. Preserved in `not/justice_data/dta/`. |
+| `justice_data/csv/*.tar.gz` | Redundant compressed archives of already-extracted CSV lookup keys and tables. | Preserved in `not/justice_data/csv/`. Active uncompressed CSV keys moved to `data/raw/keys/`. |

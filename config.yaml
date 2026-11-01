@@ -1,0 +1,96 @@
+# Configuration for Justice AI - Case Pendency Prediction Pipeline
+# Replication of: "Hybrid Machine Learning Modelling with Explainability for
+# Predicting Case Delays and Durations in Indian Lower Courts"
+
+paths:
+  raw_data_dir: "data/raw"
+  processed_data_dir: "data/processed"
+  models_dir: "models"
+  reports_dir: "reports"
+  figures_dir: "reports/figures"
+  keys_dir: "data/raw/keys"
+  reference_results_dir: "data/reference_results"
+  classifier_dataset: "data/raw/Model1cData_2010to2018_merged_criminal.csv"
+  regression_dataset: "data/raw/Model2abbaselineData_2010to2018_merged_criminal_regr.csv"
+  reference_ablation: "data/reference_results/ablation_results_85.0.csv"
+
+h2o:
+  max_mem_size: "8g"
+  nthreads: -1
+
+dataprep:
+  start_year: 2010
+  end_year: 2018
+  tenure_month_divisor: 30.0
+  threshold_delay_years: 2.0
+
+classifier:
+  model_type: "drf"
+  seed: 1234
+  nfolds: 0
+  split_ratios: [0.7, 0.15]  # train=70%, test=15%, valid=15%
+  grid_search:
+    strategy: "RandomDiscrete"
+    max_models: 2
+    seed: 1234
+    hyper_params:
+      ntrees: [50, 70]
+      max_depth: [20, 30]
+      sample_rate: [0.8]
+  target_column: "pendency_model_multiyear"
+  target_positive_class: "ontime"
+  target_negative_class: "delayed"
+
+regressors:
+  baseline:
+    seed: 10
+    max_models: 15
+    nfolds: 0
+    stopping_metric: "RMSE"
+    sort_metric: "RMSE"
+    max_pendency_filter: 100000
+  ontime:
+    seed: 10
+    max_models: 15
+    nfolds: 0
+    stopping_metric: "RMSE"
+    sort_metric: "RMSE"
+    threshold_months: 24
+  delayed:
+    seed: 10
+    max_models: 15
+    nfolds: 0
+    stopping_metric: "RMSE"
+    sort_metric: "RMSE"
+    threshold_months: 24
+    max_pendency_filter: 100000
+  target_column: "pendency_decision_filing"
+
+hybrid_benchmark:
+  n_runs: 100
+  sample_size: 1000
+  threshold_months: 24
+  prob_threshold: 0.85
+  random_seed: 42
+
+robustness:
+  seed: 42
+  perturbation_b_flip_ratio: 0.10
+  num_rows_to_explain: 10
+
+paper_benchmarks:
+  classifier:
+    accuracy: 0.8000
+    f1_score: 84.10
+    auc: 0.8200
+  regressor_ontime:
+    rmse: 4.90
+    mae: 3.80
+  regressor_delayed:
+    rmse: 13.79
+    mae: 10.45
+  hybrid_approach_4:
+    rmse: 12.15
+    mae: 8.95
+    accuracy: 0.8250
+    f1_score: 85.20
