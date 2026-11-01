@@ -4,10 +4,11 @@ import { Scale, Activity, Cpu, Award, ShieldCheck, Sun, Moon } from 'lucide-reac
 export default function Navbar({ activePage, setActivePage, darkMode, setDarkMode }) {
   const navItems = [
     { id: 'home', label: 'Home', icon: Scale },
-    { id: 'predict', label: 'Predict Delay', icon: Activity },
+    { id: 'analyze', label: 'Case Analysis', icon: Activity },
+    { id: 'predict', label: 'Manual Predict', icon: Cpu },
     { id: 'how-it-works', label: 'How It Works', icon: Cpu },
-    { id: 'results', label: 'Results & Benchmarks', icon: Award },
-    { id: 'robustness', label: 'Robustness & Fairness', icon: ShieldCheck },
+    { id: 'results', label: 'Benchmarks', icon: Award },
+    { id: 'robustness', label: 'Audits', icon: ShieldCheck },
   ];
 
   return (

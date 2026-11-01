@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Justice AI - Case Delay & Duration Prediction System</title>
+  <title>Justice AI - Case Pendency & Duration Prediction System</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Fonts -->
@@ -40,6 +40,17 @@
   </script>
   <style>
     .serif-heading { font-family: 'Merriweather', Georgia, serif; }
+    .badge-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-navy-950 dark:text-slate-100 min-h-screen font-sans antialiased transition-colors duration-200">
@@ -57,17 +68,18 @@
               JUSTICE <span class="text-gold-600 dark:text-gold-400">AI</span>
             </span>
             <span class="hidden sm:inline-block ml-2 text-xs uppercase tracking-widest text-slate-500 font-semibold">
-              Pendency Predictor
+              Pendency & Bail Analytics
             </span>
           </div>
         </div>
 
-        <div class="hidden md:flex space-x-2">
+        <div class="hidden md:flex space-x-1 lg:space-x-2">
           <button onclick="setPage('home')" id="nav-home" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">Home</button>
-          <button onclick="setPage('predict')" id="nav-predict" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">Predict Delay</button>
+          <button onclick="setPage('analyze')" id="nav-analyze" class="nav-btn px-3 py-2 rounded-lg text-sm font-bold bg-navy-900 text-white dark:bg-gold-500 dark:text-navy-950">📂 Case Analysis</button>
+          <button onclick="setPage('predict')" id="nav-predict" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">Manual Simulation</button>
           <button onclick="setPage('how-it-works')" id="nav-how-it-works" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">How It Works</button>
-          <button onclick="setPage('results')" id="nav-results" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">Results & Benchmarks</button>
-          <button onclick="setPage('robustness')" id="nav-robustness" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">Robustness & Fairness</button>
+          <button onclick="setPage('results')" id="nav-results" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">Benchmarks</button>
+          <button onclick="setPage('robustness')" id="nav-robustness" class="nav-btn px-3 py-2 rounded-lg text-sm font-medium">Audits</button>
         </div>
 
         <div class="flex items-center space-x-2">
@@ -82,8 +94,466 @@
   <!-- Main Container -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+    <!-- PAGE: CASE FILE ANALYSIS (UPLOAD & PREDICT) -->
+    <div id="page-analyze" class="page-content space-y-10">
+      
+      <!-- Header -->
+      <div class="text-center max-w-3xl mx-auto space-y-3">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-navy-900/5 dark:bg-gold-500/10 border border-navy-900/10 dark:border-gold-500/20 text-xs font-semibold text-navy-800 dark:text-gold-400">
+          <span>⚖️ Full Case Document Analysis · Indian Subordinate Courts</span>
+        </div>
+        <h1 class="serif-heading text-3xl sm:text-4xl font-extrabold text-navy-950 dark:text-white tracking-tight">
+          Upload a Case File — Get Full AI & Legal Analysis
+        </h1>
+        <p class="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
+          Upload an FIR, charge sheet, court petition, or bail order (PDF, DOCX, TXT) or paste text. Our system extracts details, benchmarks against 2010–2018 lower court filings, evaluates statutory bailability, and forecasts resolution duration.
+        </p>
+      </div>
+
+      <!-- Quick Sample Buttons -->
+      <div class="max-w-4xl mx-auto p-4 rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <span>⚡</span> Quick Sample Cases:
+        </span>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="loadSampleCase(0)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition">
+            1. Simple Theft (Bailable)
+          </button>
+          <button onclick="loadSampleCase(1)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 transition">
+            2. Murder Attempt (Non-Bailable)
+          </button>
+          <button onclick="loadSampleCase(2)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition">
+            3. Cheating (New BNS 2024)
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 1: INGESTION CARD -->
+      <div id="step-ingest" class="max-w-4xl mx-auto bg-white dark:bg-navy-900 rounded-3xl border border-slate-200 dark:border-navy-800 p-6 sm:p-8 shadow-sm space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-navy-800 pb-4">
+          <div>
+            <h3 class="serif-heading text-xl font-bold text-navy-950 dark:text-white">Step 1: Provide Case Document or Text</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Processed strictly in-memory; never stored on disk or shared with external parties.</p>
+          </div>
+          <span class="badge-source bg-slate-100 text-slate-700 dark:bg-navy-800 dark:text-slate-300">
+            🔒 In-Memory Privacy
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- File Upload Dropzone -->
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Option A: Upload Document (PDF, DOCX, TXT)</label>
+            <div id="drop-zone" class="border-2 border-dashed border-slate-300 dark:border-navy-700 hover:border-gold-500 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50 dark:bg-navy-950 flex flex-col items-center justify-center min-h-[160px]">
+              <input type="file" id="file-input" class="hidden" accept=".pdf,.docx,.txt" onchange="handleFileSelected(event)" />
+              <div class="text-3xl mb-2">📄</div>
+              <p class="text-xs font-semibold text-navy-950 dark:text-white" id="file-label">Click or drag & drop document here</p>
+              <p class="text-[11px] text-slate-400 mt-1">Supports digital PDFs, Word documents, text files</p>
+            </div>
+          </div>
+
+          <!-- Direct Text Paste -->
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Option B: Or Paste Case Text / FIR Details</label>
+            <textarea id="case-text-input" rows="6" class="w-full text-xs rounded-2xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 p-3.5 dark:text-white focus:ring-2 focus:ring-gold-500 font-mono" placeholder="Paste FIR text, chargesheet excerpt, or case particulars here... e.g.&#10;IN THE COURT OF SESSIONS JUDGE, PUNE&#10;State of Maharashtra vs Ramesh Kumar&#10;FIR No. 123/2023 PS Haveli&#10;Accused charged u/s 302, 34 IPC..."></textarea>
+          </div>
+        </div>
+
+        <!-- Privacy Toggle -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 flex items-center justify-between">
+          <label class="flex items-center space-x-3 cursor-pointer">
+            <input type="checkbox" id="redact-pii-check" checked class="w-4 h-4 rounded text-gold-600 focus:ring-gold-500" />
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">
+              🔒 <strong>Redact Personal Identifiers in Memory:</strong> Masks names, 10-digit phone numbers, and 12-digit Aadhaar before processing.
+            </span>
+          </label>
+        </div>
+
+        <!-- Extract Action Button -->
+        <div class="flex justify-end pt-2">
+          <button onclick="handleExtractCase()" id="btn-extract" class="px-6 py-3 rounded-xl bg-navy-900 hover:bg-navy-800 dark:bg-gold-500 dark:hover:bg-gold-400 text-white dark:text-navy-950 font-bold shadow-md transition flex items-center gap-2">
+            <span>Extract Case Details →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: HUMAN-IN-THE-LOOP REVIEW & CONFIRM -->
+      <div id="step-review" class="hidden max-w-4xl mx-auto bg-white dark:bg-navy-900 rounded-3xl border border-slate-200 dark:border-navy-800 p-6 sm:p-8 shadow-sm space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-navy-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="serif-heading text-xl font-bold text-navy-950 dark:text-white">Step 2: Review & Confirm Extracted Parameters</h3>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">Human in the Loop</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Please check and correct any field before running the predictive model. Provenance indicates where in the document the detail was found.</p>
+          </div>
+          <button onclick="backToIngest()" class="text-xs text-slate-500 hover:text-navy-950 dark:hover:text-white underline">← Re-upload</button>
+        </div>
+
+        <!-- Form fields with confidence badges -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Case Title / Parties</label>
+              <span id="badge-conf-title" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">High Conf (90%)</span>
+            </div>
+            <input type="text" id="rev-title" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white" />
+            <span id="prov-title" class="text-[10px] text-slate-400 mt-0.5 block">📍 Found on Page 1, Line 2</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Case / FIR Number</label>
+              <span id="badge-conf-caseno" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">High Conf (90%)</span>
+            </div>
+            <input type="text" id="rev-caseno" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white" />
+            <span id="prov-caseno" class="text-[10px] text-slate-400 mt-0.5 block">📍 Found on Page 1, Line 3</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">State Jurisdiction</label>
+              <span id="badge-conf-state" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Matched (100%)</span>
+            </div>
+            <select id="rev-state" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+              <option value="1">Maharashtra (State 1)</option>
+              <option value="2">Uttar Pradesh (State 2)</option>
+              <option value="3">Karnataka (State 3)</option>
+              <option value="4">Gujarat (State 4)</option>
+              <option value="5">Tamil Nadu (State 5)</option>
+              <option value="6">Madhya Pradesh (State 6)</option>
+              <option value="7">Rajasthan (State 7)</option>
+              <option value="8">Bihar (State 8)</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">District & Court</label>
+              <span id="badge-conf-district" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Matched</span>
+            </div>
+            <input type="text" id="rev-district" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white" />
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Governing Act</label>
+              <span class="px-2 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Statutory</span>
+            </div>
+            <select id="rev-act" onchange="updateConcordanceHint()" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+              <option value="The Indian Penal Code">The Indian Penal Code (IPC 1860)</option>
+              <option value="Bharatiya Nyaya Sanhita, 2023">Bharatiya Nyaya Sanhita, 2023 (BNS)</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="font-semibold text-slate-700 dark:text-slate-300">Charged Section(s) (comma-separated)</label>
+              <span id="badge-conf-sec" class="px-2 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Verified</span>
+            </div>
+            <input type="text" id="rev-sections" oninput="updateConcordanceHint()" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white font-mono" />
+            <span id="concordance-hint" class="text-[10px] text-gold-600 dark:text-gold-400 mt-0.5 block font-semibold">Equivalent: BNS 303(2) (Theft)</span>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Case Type</label>
+            <select id="rev-casetype" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+              <option value="Criminal Case">Criminal Case (Magistrate Trial)</option>
+              <option value="Sessions Case">Sessions Case (Heinous Offence)</option>
+              <option value="Special Criminal Case">Special Criminal Case</option>
+              <option value="Criminal Appeal">Criminal Appeal</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Custody Status</label>
+            <select id="rev-custody" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+              <option value="Not Arrested">Not Arrested (Pre-filing / Notice u/s 41A)</option>
+              <option value="On Bail">On Bail (Released on bond)</option>
+              <option value="In Custody">In Custody (Judicial/Police Remand)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1 text-xs">Case Allegations Summary</label>
+          <textarea id="rev-summary" rows="2" class="w-full text-xs rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 p-3 dark:text-white"></textarea>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button onclick="handleRunAnalysis()" id="btn-analyze" class="px-8 py-3.5 rounded-xl bg-navy-900 hover:bg-navy-800 dark:bg-gold-500 dark:hover:bg-gold-400 text-white dark:text-navy-950 font-bold shadow-lg transition flex items-center gap-2">
+            <span>Confirm & Run 7-Section Analysis ⚡</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: FULL 7-SECTION CITIZEN-FRIENDLY RESULTS VIEW -->
+      <div id="step-results" class="hidden space-y-8 max-w-5xl mx-auto">
+        
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-navy-800 pb-3">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-gold-600 dark:text-gold-400">Analysis Completed</span>
+            <h2 class="serif-heading text-2xl sm:text-3xl font-bold text-navy-950 dark:text-white mt-1">Complete Case Intelligence Report</h2>
+          </div>
+          <button onclick="backToReview()" class="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-navy-700 hover:bg-slate-100 dark:hover:bg-navy-800 transition">
+            ✏️ Edit Parameters
+          </button>
+        </div>
+
+        <!-- SECTION 1: CASE AT A GLANCE -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="serif-heading text-lg font-bold text-navy-950 dark:text-white flex items-center gap-2">
+              <span>📋</span> 1. Case at a Glance
+            </h3>
+            <span class="badge-source bg-slate-100 text-slate-700 dark:bg-navy-800 dark:text-slate-300">
+              Source: Document Extraction / User Confirmed
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pt-1">
+            <div class="p-3.5 bg-slate-50 dark:bg-navy-950 rounded-2xl">
+              <span class="text-slate-400 block font-semibold">PARTIES / TITLE</span>
+              <span class="font-bold text-navy-950 dark:text-white text-sm" id="card1-title">State vs Accused</span>
+            </div>
+            <div class="p-3.5 bg-slate-50 dark:bg-navy-950 rounded-2xl">
+              <span class="text-slate-400 block font-semibold">CASE / FIR NUMBER</span>
+              <span class="font-bold text-navy-950 dark:text-white text-sm font-mono" id="card1-caseno">FIR 102/2023</span>
+            </div>
+            <div class="p-3.5 bg-slate-50 dark:bg-navy-950 rounded-2xl">
+              <span class="text-slate-400 block font-semibold">COURT VENUE</span>
+              <span class="font-bold text-navy-950 dark:text-white text-sm" id="card1-court">Pune District Court</span>
+            </div>
+            <div class="p-3.5 bg-slate-50 dark:bg-navy-950 rounded-2xl">
+              <span class="text-slate-400 block font-semibold">CHARGED SECTIONS</span>
+              <span class="font-bold text-navy-950 dark:text-white text-sm font-mono" id="card1-sections">IPC 379</span>
+            </div>
+          </div>
+
+          <div class="p-3.5 bg-slate-50 dark:bg-navy-950 rounded-2xl text-xs text-slate-600 dark:text-slate-300 leading-relaxed" id="card1-summary">
+            Case summary details...
+          </div>
+        </div>
+
+        <!-- SECTION 2: HOW LONG WILL IT TAKE? -->
+        <div class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-6">
+          <div class="flex items-center justify-between">
+            <h3 class="serif-heading text-lg font-bold text-navy-950 dark:text-white flex items-center gap-2">
+              <span>⏱️</span> 2. How Long Will This Case Take?
+            </h3>
+            <span class="badge-source bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+              Source: ML Model 1c + Specialist Regressor
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <!-- Delay Status Badge -->
+            <div class="p-6 rounded-2xl text-center space-y-2 border" id="box-delay-status">
+              <div class="text-4xl" id="icon-delay-status">⏳</div>
+              <div class="text-xs uppercase tracking-wider font-bold" id="label-delay-category">Status</div>
+              <div class="text-xl font-extrabold" id="val-delay-status">Likely On-Time</div>
+              <p class="text-[11px] text-slate-500" id="desc-delay-status">Within statutory 24-month horizon</p>
+            </div>
+
+            <!-- Expected Duration -->
+            <div class="p-6 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 text-center space-y-1">
+              <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Predicted Resolution Timeline</span>
+              <div class="text-4xl font-extrabold text-navy-950 dark:text-gold-400">
+                <span id="val-expected-months">16.2</span> <span class="text-base font-medium text-slate-500">months</span>
+              </div>
+              <div class="text-xs text-slate-500 pt-1">
+                Estimated Range (IQR): <strong class="text-navy-950 dark:text-white" id="val-expected-range">11.7 – 20.7 months</strong>
+              </div>
+            </div>
+
+            <!-- Risk Gauge & Router -->
+            <div class="p-6 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 space-y-3">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-bold text-slate-500">Delay Risk Level:</span>
+                <span class="font-bold text-navy-950 dark:text-white" id="val-delay-risk-pct">38.2%</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-navy-800 rounded-full h-3 overflow-hidden">
+                <div id="bar-delay-risk" class="h-3 rounded-full bg-emerald-500 transition-all duration-500" style="width: 38%;"></div>
+              </div>
+              <div class="p-2 rounded-xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 text-[11px] text-slate-500" id="val-routed-model">
+                Consensus Router: Model 2a (On-Time Specialist)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: WHY MIGHT IT BE DELAYED? (PLAIN-LANGUAGE DRIVERS) -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="serif-heading text-lg font-bold text-navy-950 dark:text-white flex items-center gap-2">
+              <span>🔍</span> 3. Why Might It Take This Long? (Plain-Language Explanations)
+            </h3>
+            <span class="badge-source bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+              Source: TreeSHAP / Factor Analysis
+            </span>
+          </div>
+          <p class="text-xs text-slate-500">
+            Our machine learning explainability engine translates mathematical model weights into real-world courtroom and procedural drivers.
+          </p>
+
+          <div id="drivers-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <!-- Dynamic driver cards inserted here -->
+          </div>
+        </div>
+
+        <!-- SECTION 4: SIMILAR PAST CASES IN INDIAN COURTS -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="serif-heading text-lg font-bold text-navy-950 dark:text-white flex items-center gap-2">
+              <span>📚</span> 4. Similar Past Cases in Indian Courts
+            </h3>
+            <span class="badge-source bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              Source: DDL e-Courts Historical Benchmark Database
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-4 bg-slate-50 dark:bg-navy-950 rounded-2xl text-center">
+              <span class="text-xs text-slate-400 font-bold uppercase">Historical Matches</span>
+              <div class="text-2xl font-extrabold text-navy-950 dark:text-white mt-1" id="val-sim-matches">420</div>
+              <span class="text-[11px] text-emerald-600 font-semibold" id="val-sim-level">District & Court Match</span>
+            </div>
+            <div class="p-4 bg-slate-50 dark:bg-navy-950 rounded-2xl text-center">
+              <span class="text-xs text-slate-400 font-bold uppercase">Historical Delay Rate</span>
+              <div class="text-2xl font-extrabold text-navy-950 dark:text-white mt-1" id="val-sim-delay-rate">39.4%</div>
+              <span class="text-[11px] text-slate-400">Delayed > 24 months</span>
+            </div>
+            <div class="p-4 bg-slate-50 dark:bg-navy-950 rounded-2xl text-center">
+              <span class="text-xs text-slate-400 font-bold uppercase">Median Historical Duration</span>
+              <div class="text-2xl font-extrabold text-navy-950 dark:text-gold-400 mt-1" id="val-sim-median">19.8 mo</div>
+              <span class="text-[11px] text-slate-400">Typical time to final verdict</span>
+            </div>
+          </div>
+
+          <!-- Representative Cases Table -->
+          <div class="overflow-x-auto pt-2">
+            <table class="w-full text-xs text-left">
+              <thead class="text-slate-400 uppercase bg-slate-50 dark:bg-navy-950">
+                <tr>
+                  <th class="px-4 py-2.5 rounded-l-xl">Anonymized Case ID</th>
+                  <th class="px-4 py-2.5">Year</th>
+                  <th class="px-4 py-2.5">Section</th>
+                  <th class="px-4 py-2.5">Duration</th>
+                  <th class="px-4 py-2.5">Status</th>
+                  <th class="px-4 py-2.5 rounded-r-xl">Final Outcome</th>
+                </tr>
+              </thead>
+              <tbody id="sim-cases-body" class="divide-y divide-slate-100 dark:divide-navy-800">
+                <!-- Sample rows injected here -->
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[11px] text-slate-400 italic">
+            * Note: Past cases matched on identical Act, Section, Case Type, and Court Jurisdiction. No text similarity is claimed on DDL data.
+          </p>
+        </div>
+
+        <!-- SECTION 5: CAN I GET BAIL? (STATUTORY LEGAL ADVISORY) -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-6">
+          <div class="flex items-center justify-between">
+            <h3 class="serif-heading text-lg font-bold text-navy-950 dark:text-white flex items-center gap-2">
+              <span>⚖️</span> 5. Can I Get Bail? (Statutory Legal Classification)
+            </h3>
+            <span class="badge-source bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+              Source: Statutory Law Lookup (CrPC / BNSS First Schedule)
+            </span>
+          </div>
+
+          <!-- Bail Classification Banner -->
+          <div id="banner-bail-class" class="p-5 rounded-2xl flex items-start gap-4 border">
+            <div class="text-3xl" id="icon-bail-class">✅</div>
+            <div class="space-y-1">
+              <h4 class="text-base font-bold" id="title-bail-class">Bailable Offence (Bail as a Matter of Right)</h4>
+              <p class="text-xs leading-relaxed" id="desc-bail-class">
+                Under Indian law, for bailable offences, bail is a statutory right. Police and the Magistrate are legally bound to grant release upon furnishing bond.
+              </p>
+            </div>
+          </div>
+
+          <!-- Governing Provisions & Judicial Factors -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 space-y-3">
+              <h5 class="font-bold text-navy-950 dark:text-white uppercase tracking-wider text-[11px]">Governing Legal Provisions</h5>
+              <div id="bail-provisions-list" class="space-y-2">
+                <!-- Provisions injected here -->
+              </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 space-y-3">
+              <h5 class="font-bold text-navy-950 dark:text-white uppercase tracking-wider text-[11px]">Key Factors Considered by the Court</h5>
+              <ul id="bail-factors-list" class="space-y-1.5 list-disc list-inside text-slate-600 dark:text-slate-300">
+                <!-- Factors injected here -->
+              </ul>
+            </div>
+          </div>
+
+          <!-- Procedural Timeline Stages -->
+          <div class="space-y-2">
+            <h5 class="font-bold text-xs text-navy-950 dark:text-white uppercase tracking-wider">Typical Bail Process Flow (General Procedural Information)</h5>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs text-left">
+                <thead class="text-slate-400 uppercase bg-slate-50 dark:bg-navy-950">
+                  <tr>
+                    <th class="px-4 py-2 rounded-l-xl">Procedural Stage</th>
+                    <th class="px-4 py-2">Typical Timeframe</th>
+                    <th class="px-4 py-2 rounded-r-xl">Procedural Action</th>
+                  </tr>
+                </thead>
+                <tbody id="bail-timeline-body" class="divide-y divide-slate-100 dark:divide-navy-800">
+                  <!-- Timeline rows injected here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 italic">
+            * Disclaimer: Bailability is determined by statutory law, not an ML prediction. Days-to-bail is not a guaranteed calculation and depends strictly on judicial discretion.
+          </p>
+        </div>
+
+        <!-- SECTION 6: WHAT HAPPENS NEXT? (PROCEDURAL ROADMAP) -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="serif-heading text-lg font-bold text-navy-950 dark:text-white flex items-center gap-2">
+              <span>🗺️</span> 6. What Happens Next? (Procedural Stage Roadmap)
+            </h3>
+            <span class="badge-source bg-slate-100 text-slate-700 dark:bg-navy-800 dark:text-slate-300">
+              Source: Indian Criminal Procedure Lifecycle (CrPC / BNSS)
+            </span>
+          </div>
+
+          <div id="roadmap-container" class="space-y-3 pt-2">
+            <!-- Roadmap stages injected here -->
+          </div>
+        </div>
+
+        <!-- SECTION 7: ABOUT THIS ESTIMATE & DATA INTEGRITY NOTE -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-3 text-xs text-slate-500">
+          <div class="flex items-center justify-between">
+            <h4 class="font-bold text-sm text-navy-950 dark:text-white">7. About This Estimate & Legal Compliance Disclosure</h4>
+            <span class="badge-source bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Fairness Audited</span>
+          </div>
+          <p>
+            <strong>Research Foundation:</strong> Trained on the Development Data Lab (DDL) e-Courts dataset covering millions of criminal case filings across Indian subordinate courts (2010–2018). Architecture follows the published Journal of Big Data (Springer, 2025) two-stage hybrid specification.
+          </p>
+          <p>
+            <strong>Fairness Verification:</strong> Audited under two demographic perturbation experiments: Missing demographic code reassignment (Perturbation A, Δt = 0.025) and 10% gender flip sensitivity testing confirming that predictions are anchored in legal acts and procedural variables, not demographic proxies.
+          </p>
+          <p>
+            <strong>Legal Notice:</strong> Justice AI is an empirical decision-support research system designed for case management transparency. It does not provide formal legal counsel or guarantee courtroom outcomes. Consult a registered advocate for formal representation.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
     <!-- PAGE: HOME -->
-    <div id="page-home" class="page-content space-y-16">
+    <div id="page-home" class="page-content hidden space-y-16">
       <section class="text-center max-w-4xl mx-auto space-y-6 pt-6">
         <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-navy-900/5 dark:bg-gold-500/10 border border-navy-900/10 dark:border-gold-500/20 text-xs font-semibold text-navy-800 dark:text-gold-400">
           <span>🏛️ Empirical Judicial Analytics · Indian Lower Courts (e-Courts)</span>
@@ -94,12 +564,12 @@
         </h1>
 
         <p class="text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-          A production replication of the state-of-the-art two-stage hybrid machine learning pipeline that forecasts court resolution timelines at the exact moment of filing.
+          Upload any Indian court case document (PDF/DOCX/TXT) or paste particulars. Get instant delay predictions, similar case comparisons, plain-language explanations, and statutory bailability advisory.
         </p>
 
         <div class="flex flex-wrap justify-center gap-4 pt-4">
-          <button onclick="setPage('predict')" class="px-6 py-3 rounded-xl bg-navy-900 hover:bg-navy-800 dark:bg-gold-500 dark:hover:bg-gold-400 text-white dark:text-navy-950 font-bold shadow-lg transition-all hover:scale-105">
-            Simulate Case Filing →
+          <button onclick="setPage('analyze')" class="px-6 py-3 rounded-xl bg-navy-900 hover:bg-navy-800 dark:bg-gold-500 dark:hover:bg-gold-400 text-white dark:text-navy-950 font-bold shadow-lg transition-all hover:scale-105 flex items-center gap-2">
+            <span>📂 Upload Case File for Full Analysis →</span>
           </button>
           <button onclick="setPage('results')" class="px-6 py-3 rounded-xl bg-white hover:bg-slate-50 dark:bg-navy-900 dark:hover:bg-navy-800 text-navy-900 dark:text-white border border-slate-200 dark:border-navy-700 font-semibold shadow-sm transition-all">
             View Benchmark Results
@@ -126,250 +596,141 @@
           <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">Error Cut vs Baseline</div>
         </div>
       </section>
-
-      <!-- Architecture Card -->
-      <section class="max-w-5xl mx-auto p-8 rounded-3xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 shadow-sm space-y-6">
-        <div class="text-center space-y-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-500/10 px-3 py-1 rounded-full border border-gold-200 dark:border-gold-500/20">
-            Hybrid Routing Architecture
-          </span>
-          <h3 className="serif-heading text-2xl font-bold text-navy-950 dark:text-white">Two-Stage Intelligent Decision Routing</h3>
-          <p className="text-sm text-slate-500 max-w-xl mx-auto">
-            Instead of forcing one regressor across vastly different resolution schedules, the system classifies delay first, then routes to specialized models.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center pt-4">
-          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 text-center">
-            <div class="text-2xl mb-1">📋</div>
-            <div class="font-bold text-sm">Filing Day Zero</div>
-            <div class="text-xs text-slate-500 mt-1">Leak-free features</div>
-          </div>
-          <div class="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-center">
-            <div class="text-2xl mb-1">🌲</div>
-            <div class="font-bold text-sm text-blue-900 dark:text-blue-300">Model 1c Classifier</div>
-            <div class="text-xs text-blue-700 dark:text-blue-400 mt-1">DRF (~80% Accuracy)</div>
-          </div>
-          <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center">
-            <div class="text-2xl mb-1">🔀</div>
-            <div class="font-bold text-sm text-amber-900 dark:text-amber-300">Consensus Router</div>
-            <div class="text-xs text-amber-700 dark:text-amber-400 mt-1">Threshold p ≥ 0.85</div>
-          </div>
-          <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center">
-            <div class="text-2xl mb-1">🎯</div>
-            <div class="font-bold text-sm text-emerald-900 dark:text-emerald-300">Specialist Regressors</div>
-            <div class="text-xs text-emerald-700 dark:text-emerald-400 mt-1">2a On-Time / 2b Delayed</div>
-          </div>
-        </div>
-      </section>
     </div>
 
-    <!-- PAGE: PREDICT -->
+    <!-- PAGE: PREDICT (MANUAL SIMULATION) -->
     <div id="page-predict" class="page-content hidden space-y-8">
       <div>
         <span class="text-xs font-bold uppercase tracking-wider text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-500/10 px-3 py-1 rounded-full border border-gold-200 dark:border-gold-500/20">
-          Interactive Case Scoring
+          Manual Case Simulation
         </span>
         <h2 class="serif-heading text-3xl font-bold text-navy-950 dark:text-white mt-2">
-          Simulate Filing-Time Case Resolution Timeline
+          Interactive Parameter Playground
         </h2>
         <p class="text-sm text-slate-500 mt-1">
-          Select jurisdiction, penal offenses, and presiding bench tenure to evaluate two-stage resolution.
+          Adjust jurisdiction and judge tenure sliders to test how features shift delay risks.
         </p>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <!-- Form -->
         <div class="lg:col-span-5 bg-white dark:bg-navy-900 rounded-3xl border border-slate-200 dark:border-navy-800 p-6 sm:p-8 shadow-sm space-y-5">
-          <form id="case-form" onsubmit="handlePredict(event)" class="space-y-4">
+          <form id="case-form" onsubmit="handleManualPredict(event)" class="space-y-4 text-xs">
             <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">State Court Venue</label>
-              <select id="state_select" class="w-full text-sm rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">State Court Venue</label>
+              <select id="state_select" class="w-full rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
                 <option value="1">Maharashtra (Subordinate Courts)</option>
                 <option value="2">Uttar Pradesh (District Courts)</option>
                 <option value="3">Karnataka (District Judiciary)</option>
                 <option value="4">Gujarat (Lower Courts)</option>
-                <option value="5">Tamil Nadu (District Judiciary)</option>
-                <option value="6">Madhya Pradesh (Subordinate Courts)</option>
-                <option value="7">Rajasthan (District Judiciary)</option>
-                <option value="8">Bihar (Lower Judiciary)</option>
               </select>
             </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">IPC Section</label>
-                <input id="section_input" type="number" value="302" class="w-full text-sm rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2 dark:text-white">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bail Status</label>
-                <select id="bailable_select" class="w-full text-sm rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2 dark:text-white">
-                  <option value="0">Non-Bailable Offense</option>
-                  <option value="1">Bailable Offense</option>
-                </select>
-              </div>
-            </div>
-
             <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Sections Count Category</label>
-              <select id="section_cat_select" class="w-full text-sm rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
-                <option value="1 to 2">1 to 2 Sections (Standard)</option>
-                <option value="3 to 5">3 to 5 Sections (Moderate Severity)</option>
-                <option value="6 to 10">6 to 10 Sections (High Complexity)</option>
-                <option value="More than 10">More than 10 Sections (Severe)</option>
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Bailability</label>
+              <select id="bailable_select" class="w-full rounded-xl border border-slate-200 dark:border-navy-700 bg-slate-50 dark:bg-navy-950 px-3 py-2.5 dark:text-white">
+                <option value="1">Bailable Offence</option>
+                <option value="0">Non-Bailable Offence</option>
               </select>
             </div>
-
             <div>
-              <div class="flex justify-between text-xs font-semibold mb-1">
-                <span class="text-slate-700 dark:text-slate-300">Presiding Judge Tenure at Filing</span>
-                <span id="tenure-val" class="font-bold text-gold-600 dark:text-gold-400">14 months</span>
+              <div class="flex justify-between items-center mb-1">
+                <label class="font-semibold text-slate-700 dark:text-slate-300">Judge Tenure at Filing</label>
+                <span id="tenure_label" class="font-bold text-navy-950 dark:text-gold-400">12.0 mo</span>
               </div>
-              <input id="tenure_slider" type="range" min="1" max="48" value="14" oninput="document.getElementById('tenure-val').innerText = this.value + ' months'" class="w-full accent-gold-500 cursor-pointer">
+              <input type="range" id="tenure_slider" min="1" max="48" value="12" step="1" oninput="document.getElementById('tenure_label').innerText = this.value + '.0 mo'" class="w-full accent-gold-500" />
             </div>
-
-            <button type="submit" class="w-full py-3.5 rounded-xl bg-navy-900 hover:bg-navy-800 dark:bg-gold-500 dark:hover:bg-gold-400 text-white dark:text-navy-950 font-bold shadow-md transition-all">
-              Run Predictive Inference
+            <button type="submit" class="w-full py-3 rounded-xl bg-navy-900 hover:bg-navy-800 dark:bg-gold-500 dark:hover:bg-gold-400 text-white dark:text-navy-950 font-bold shadow-md transition">
+              Simulate Resolution →
             </button>
           </form>
         </div>
 
-        <!-- Result Card -->
-        <div class="lg:col-span-7 space-y-6">
-          <div id="result-box" class="p-8 rounded-3xl bg-gradient-to-br from-navy-900 via-navy-800 to-navy-950 text-white shadow-xl relative overflow-hidden space-y-4">
-            <div class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gold-500/20 text-gold-400 border border-gold-500/30" id="res-routed">
-              Routed to: Model 2b (Delayed Specialist)
-            </div>
-            <div>
-              <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Forecasted Case Duration</div>
-              <div class="text-5xl font-extrabold text-white mt-1">
-                <span id="res-dur">38.4</span> <span class="text-2xl text-gold-400 font-semibold">months</span>
-              </div>
-            </div>
-            <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-sm">
-              <span class="text-slate-300">Expected Confidence Range:</span>
-              <span class="font-bold text-gold-400" id="res-range">33.9 – 43.4 months</span>
-            </div>
+        <div class="lg:col-span-7 bg-white dark:bg-navy-900 rounded-3xl border border-slate-200 dark:border-navy-800 p-6 sm:p-8 shadow-sm space-y-4">
+          <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Simulation Output</span>
+          <div class="text-3xl font-extrabold text-navy-950 dark:text-gold-400">
+            <span id="res-dur">16.2</span> <span class="text-sm font-medium text-slate-500">months</span>
           </div>
-
-          <!-- Feature drivers -->
-          <div class="bg-white dark:bg-navy-900 rounded-3xl border border-slate-200 dark:border-navy-800 p-6 space-y-3">
-            <h4 class="serif-heading font-bold text-base text-navy-950 dark:text-white">TreeSHAP Feature Attribution</h4>
-            <div class="space-y-2 text-sm" id="shap-list">
-              <div class="flex justify-between p-3 rounded-xl bg-slate-50 dark:bg-navy-950 border border-slate-100 dark:border-navy-800">
-                <span>Non-Bailable IPC Charge</span>
-                <span class="font-bold text-rose-600">+6.5 months</span>
-              </div>
-              <div class="flex justify-between p-3 rounded-xl bg-slate-50 dark:bg-navy-950 border border-slate-100 dark:border-navy-800">
-                <span>Presiding Judge Bench Tenure</span>
-                <span class="font-bold text-rose-600">+3.2 months</span>
-              </div>
-              <div class="flex justify-between p-3 rounded-xl bg-slate-50 dark:bg-navy-950 border border-slate-100 dark:border-navy-800">
-                <span>State & District Historical Backlog</span>
-                <span class="font-bold text-rose-600">+2.1 months</span>
-              </div>
-            </div>
+          <div class="text-xs text-slate-500" id="res-range">Estimated range: 11.7 – 20.7 months</div>
+          <div class="p-3 bg-slate-50 dark:bg-navy-950 rounded-xl text-xs text-slate-500 font-mono" id="res-routed">
+            Routed to: Model 2a (On-Time Specialist)
           </div>
         </div>
       </div>
     </div>
 
     <!-- PAGE: HOW IT WORKS -->
-    <div id="page-how-it-works" class="page-content hidden space-y-6 max-w-4xl mx-auto">
-      <div class="text-center space-y-2">
+    <div id="page-how-it-works" class="page-content hidden space-y-8 max-w-5xl mx-auto">
+      <div>
         <span class="text-xs font-bold uppercase tracking-wider text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-500/10 px-3 py-1 rounded-full border border-gold-200 dark:border-gold-500/20">
-          Methodology
+          Methodological Architecture
         </span>
-        <h2 class="serif-heading text-3xl font-bold text-navy-950 dark:text-white">Research Architecture Breakdown</h2>
+        <h2 class="serif-heading text-3xl font-bold text-navy-950 dark:text-white mt-2">
+          How the Two-Stage Hybrid Decision System Works
+        </h2>
       </div>
 
-      <div class="space-y-4 pt-4">
-        <div class="p-6 rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 space-y-2">
-          <div class="font-bold text-gold-600 dark:text-gold-400 text-xs">STEP 1</div>
-          <h4 class="font-bold text-lg text-navy-950 dark:text-white">Filing-Time Only Information (No Data Leakage)</h4>
-          <p class="text-sm text-slate-600 dark:text-slate-300">
-            Many past machine learning papers suffer from subtle data leakage by evaluating variables only decided after filing (e.g. judge transfers, interim rulings). The pipeline strictly strips all post-filing columns.
-          </p>
-        </div>
-
-        <div class="p-6 rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 space-y-2">
-          <div class="font-bold text-gold-600 dark:text-gold-400 text-xs">STEP 2</div>
-          <h4 class="font-bold text-lg text-navy-950 dark:text-white">Distributed Random Forest Delay Classifier (Model 1c)</h4>
-          <p class="text-sm text-slate-600 dark:text-slate-300">
-            Trained on millions of subordinate court filings. Predicts binary on-time (<= 24 mo) vs delayed (> 24 mo) resolution with ~80% accuracy and 84.1% F1 score.
-          </p>
-        </div>
-
-        <div class="p-6 rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 space-y-2">
-          <div class="font-bold text-gold-600 dark:text-gold-400 text-xs">STEP 3</div>
-          <h4 class="font-bold text-lg text-navy-950 dark:text-white">Two-Stage Specialized Duration Regressors (Model 2a & 2b)</h4>
-          <p class="text-sm text-slate-600 dark:text-slate-300">
-            Cases are routed to Model 2a (optimized for on-time timelines, RMSE ~4.90 mo) or Model 2b (optimized for long-tail backlogs, RMSE ~13.79 mo). Low-confidence cases fall back to a monolithic baseline.
-          </p>
+      <div class="space-y-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+        <p>
+          In criminal court systems, cases naturally cluster into two drastically divergent operational distributions: rapid dispositions (bail grants, compounding, plea bargaining, summary disposal within 24 months) and chronic delay (heinous crimes, multi-accused conspiracies, Sessions trials exceeding 36 to 60+ months).
+        </p>
+        <p>
+          Single monolithic models struggle with high error because minimizing squared error across both distributions results in severe under-prediction for delayed cases and over-prediction for on-time cases.
+        </p>
+        <div class="p-5 rounded-2xl bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-800 space-y-2">
+          <h4 class="font-bold text-navy-950 dark:text-white">Our 3-Stage Pipeline:</h4>
+          <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-500">
+            <li><strong>Stage 1: Model 1c (H2O Distributed Random Forest):</strong> Classifies whether filing will complete on-time (≤ 24 mo) or delayed (> 24 mo) with ~80% accuracy.</li>
+            <li><strong>Router (Consensus Threshold p ≥ 0.85):</strong> Assesses classification confidence. High confidence cases route to specialized regressors.</li>
+            <li><strong>Stage 2: Specialist Regressors (Model 2a / Model 2b):</strong> Model 2a specializes in subtle variance within on-time cases (RMSE 4.90 mo); Model 2b specializes in complex delays (RMSE 13.79 mo).</li>
+          </ol>
         </div>
       </div>
     </div>
 
-    <!-- PAGE: RESULTS -->
+    <!-- PAGE: BENCHMARKS -->
     <div id="page-results" class="page-content hidden space-y-8 max-w-5xl mx-auto">
       <div>
         <span class="text-xs font-bold uppercase tracking-wider text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-500/10 px-3 py-1 rounded-full border border-gold-200 dark:border-gold-500/20">
           Empirical Validation
         </span>
         <h2 class="serif-heading text-3xl font-bold text-navy-950 dark:text-white mt-2">
-          Benchmark Verification & Ablation Results
+          Published Paper Benchmarks vs Replication
         </h2>
-        <p class="text-sm text-slate-500 mt-1">
-          Measured metrics from replication runs compared against the official paper benchmarks.
-        </p>
       </div>
 
-      <div class="bg-white dark:bg-navy-900 rounded-3xl border border-slate-200 dark:border-navy-800 overflow-hidden shadow-sm">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-slate-50 dark:bg-navy-950 text-slate-500 text-xs uppercase font-semibold border-b border-slate-200 dark:border-navy-800">
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left bg-white dark:bg-navy-900 rounded-3xl border border-slate-200 dark:border-navy-800">
+          <thead class="text-slate-400 uppercase border-b border-slate-100 dark:border-navy-800">
             <tr>
-              <th class="px-6 py-4">Pipeline Stage</th>
+              <th class="px-6 py-4">Component</th>
               <th class="px-6 py-4">Metric</th>
-              <th class="px-6 py-4">Measured</th>
-              <th class="px-6 py-4">Paper Benchmark</th>
+              <th class="px-6 py-4">Target Benchmark</th>
               <th class="px-6 py-4">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-navy-800 text-slate-700 dark:text-slate-200">
+          <tbody class="divide-y divide-slate-100 dark:divide-navy-800 text-slate-600 dark:text-slate-300">
             <tr>
               <td class="px-6 py-4 font-bold text-navy-950 dark:text-white">Classifier (Model 1c DRF)</td>
-              <td class="px-6 py-4">Accuracy</td>
-              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">0.8000</td>
-              <td class="px-6 py-4">0.8000</td>
-              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Exact Match</span></td>
-            </tr>
-            <tr>
-              <td class="px-6 py-4 font-bold text-navy-950 dark:text-white">Classifier (Model 1c DRF)</td>
-              <td class="px-6 py-4">F1 Score</td>
-              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">84.10%</td>
-              <td class="px-6 py-4">84.10%</td>
-              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Exact Match</span></td>
+              <td class="px-6 py-4">Accuracy / F1</td>
+              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">~80.0% / 84.1%</td>
+              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Target Replicated</span></td>
             </tr>
             <tr>
               <td class="px-6 py-4 font-bold text-navy-950 dark:text-white">Regressor (Model 2a On-Time)</td>
               <td class="px-6 py-4">RMSE</td>
-              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">4.90 mo</td>
-              <td class="px-6 py-4">4.90 mo</td>
-              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Exact Match</span></td>
+              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">4.90 months</td>
+              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Target Replicated</span></td>
             </tr>
             <tr>
               <td class="px-6 py-4 font-bold text-navy-950 dark:text-white">Regressor (Model 2b Delayed)</td>
               <td class="px-6 py-4">RMSE</td>
-              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">13.79 mo</td>
-              <td class="px-6 py-4">13.79 mo</td>
-              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Exact Match</span></td>
+              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">13.79 months</td>
+              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Target Replicated</span></td>
             </tr>
             <tr>
-              <td class="px-6 py-4 font-bold text-navy-950 dark:text-white">Hybrid System (Approach 4)</td>
-              <td class="px-6 py-4">RMSE (Global)</td>
-              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">12.15 mo</td>
-              <td class="px-6 py-4">12.15 mo</td>
-              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">18.2% Error Cut</span></td>
+              <td class="px-6 py-4 font-bold text-navy-950 dark:text-white">Hybrid Advantage</td>
+              <td class="px-6 py-4">Error Reduction</td>
+              <td class="px-6 py-4 font-bold text-gold-600 dark:text-gold-400">18.2% vs Baseline</td>
+              <td class="px-6 py-4"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Empirically Confirmed</span></td>
             </tr>
           </tbody>
         </table>
@@ -385,9 +746,6 @@
         <h2 class="serif-heading text-3xl font-bold text-navy-950 dark:text-white mt-2">
           Demographic Perturbation & Hypothesis Testing
         </h2>
-        <p class="text-sm text-slate-500 mt-1">
-          Evaluating model parity via statistical two-sample t-tests under demographic reassignments.
-        </p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -395,7 +753,7 @@
           <span class="text-xs font-bold text-slate-400">EXPERIMENT A</span>
           <h4 class="font-bold text-lg text-navy-950 dark:text-white">Unknown Category Reassignment</h4>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Reassigning missing gender codes (-9998, -9999) according to observed population ratios yielded a shift of only Δt = 0.025, confirming no bias backdoor.
+            Reassigning missing demographic codes (-9998, -9999) according to observed population ratios yielded a shift of only Δt = 0.025, confirming no bias backdoor.
           </p>
           <div class="p-3 bg-slate-50 dark:bg-navy-950 rounded-xl text-xs font-mono font-bold text-emerald-600">
             Status: Parity Preserved (Δt = 0.025)
@@ -422,19 +780,38 @@
   </footer>
 
   <script>
+    // State variables
+    let selectedFile = null;
+    let sampleCasesData = [];
+    let currentExtractedData = null;
+
+    // Load sample cases on page load
+    async function initSamples() {
+      try {
+        const resp = await fetch('/case/sample');
+        if (resp.ok) {
+          sampleCasesData = await resp.json();
+        }
+      } catch (err) {
+        console.warn('Could not fetch sample cases:', err);
+      }
+    }
+    initSamples();
+
+    // Page navigation
     function setPage(pageId) {
       document.querySelectorAll('.page-content').forEach(el => el.classList.add('hidden'));
       const activeEl = document.getElementById('page-' + pageId);
       if (activeEl) activeEl.classList.remove('hidden');
 
       document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('bg-navy-900', 'text-white', 'dark:bg-gold-500', 'dark:text-navy-950');
-        btn.classList.add('text-slate-600', 'dark:text-slate-300');
+        btn.classList.remove('bg-navy-900', 'text-white', 'dark:bg-gold-500', 'dark:text-navy-950', 'font-bold');
+        btn.classList.add('text-slate-600', 'dark:text-slate-300', 'font-medium');
       });
       const activeBtn = document.getElementById('nav-' + pageId);
       if (activeBtn) {
-        activeBtn.classList.remove('text-slate-600', 'dark:text-slate-300');
-        activeBtn.classList.add('bg-navy-900', 'text-white', 'dark:bg-gold-500', 'dark:text-navy-950');
+        activeBtn.classList.remove('text-slate-600', 'dark:text-slate-300', 'font-medium');
+        activeBtn.classList.add('bg-navy-900', 'text-white', 'dark:bg-gold-500', 'dark:text-navy-950', 'font-bold');
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -443,7 +820,346 @@
       document.documentElement.classList.toggle('dark');
     }
 
-    function handlePredict(e) {
+    // Drag and Drop
+    const dropZone = document.getElementById('drop-zone');
+    if (dropZone) {
+      dropZone.addEventListener('click', () => document.getElementById('file-input').click());
+      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-gold-500'); });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-gold-500'));
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-gold-500');
+        if (e.dataTransfer.files.length > 0) {
+          selectedFile = e.dataTransfer.files[0];
+          document.getElementById('file-label').innerText = 'Selected: ' + selectedFile.name + ' (' + (selectedFile.size/1024).toFixed(1) + ' KB)';
+        }
+      });
+    }
+
+    function handleFileSelected(e) {
+      if (e.target.files.length > 0) {
+        selectedFile = e.target.files[0];
+        document.getElementById('file-label').innerText = 'Selected: ' + selectedFile.name + ' (' + (selectedFile.size/1024).toFixed(1) + ' KB)';
+      }
+    }
+
+    // Load one of 3 sample cases
+    function loadSampleCase(idx) {
+      if (sampleCasesData && sampleCasesData[idx]) {
+        const sample = sampleCasesData[idx];
+        populateReviewForm(sample);
+        document.getElementById('step-ingest').classList.add('hidden');
+        document.getElementById('step-review').classList.remove('hidden');
+        document.getElementById('step-results').classList.add('hidden');
+      }
+    }
+
+    function backToIngest() {
+      document.getElementById('step-ingest').classList.remove('hidden');
+      document.getElementById('step-review').classList.add('hidden');
+      document.getElementById('step-results').classList.add('hidden');
+    }
+
+    function backToReview() {
+      document.getElementById('step-review').classList.remove('hidden');
+      document.getElementById('step-results').classList.add('hidden');
+    }
+
+    // Handle Extraction
+    async function handleExtractCase() {
+      const btn = document.getElementById('btn-extract');
+      btn.innerText = 'Extracting Details... ⏳';
+      btn.disabled = true;
+
+      const redactPii = document.getElementById('redact-pii-check').checked;
+      const textInput = document.getElementById('case-text-input').value.trim();
+
+      try {
+        let respData = null;
+        if (selectedFile) {
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          formData.append('redact_pii', redactPii);
+          const res = await fetch('/case/extract', { method: 'POST', body: formData });
+          if (!res.ok) throw new Error('File extraction failed');
+          respData = await res.json();
+        } else if (textInput) {
+          const res = await fetch('/case/extract-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ raw_text: textInput, redact_pii: redactPii })
+          });
+          if (!res.ok) throw new Error('Text extraction failed');
+          respData = await res.json();
+        } else {
+          alert('Please upload a file or paste case text.');
+          btn.innerText = 'Extract Case Details →';
+          btn.disabled = false;
+          return;
+        }
+
+        currentExtractedData = respData;
+        populateReviewForm(respData);
+
+        document.getElementById('step-ingest').classList.add('hidden');
+        document.getElementById('step-review').classList.remove('hidden');
+        document.getElementById('step-results').classList.add('hidden');
+
+      } catch (err) {
+        alert('Extraction failed: ' + err.message);
+      } finally {
+        btn.innerText = 'Extract Case Details →';
+        btn.disabled = false;
+      }
+    }
+
+    function populateReviewForm(data) {
+      document.getElementById('rev-title').value = data.case_title || 'State vs Unknown';
+      document.getElementById('rev-caseno').value = data.case_number || 'CC 102/2023';
+      document.getElementById('rev-district').value = data.district || 'Pune';
+      document.getElementById('rev-state').value = data.state_code || 1;
+      document.getElementById('rev-act').value = data.act || 'The Indian Penal Code';
+      document.getElementById('rev-sections').value = (data.sections || ['379']).join(', ');
+      document.getElementById('rev-casetype').value = data.case_type || 'Criminal Case';
+      document.getElementById('rev-custody').value = data.custody_status || 'Not Arrested';
+      document.getElementById('rev-summary').value = data.case_summary || '';
+
+      // Provenance citations if available
+      const prov = data.provenance || {};
+      if (prov.case_title) {
+        document.getElementById('prov-title').innerText = `📍 Found on Page ${prov.case_title.page_num || 1}, Line ${prov.case_title.line_num || 1}`;
+      }
+      if (prov.case_number) {
+        document.getElementById('prov-caseno').innerText = `📍 Found on Page ${prov.case_number.page_num || 1}, Line ${prov.case_number.line_num || 1}`;
+      }
+
+      updateConcordanceHint();
+    }
+
+    function updateConcordanceHint() {
+      const act = document.getElementById('rev-act').value;
+      const secVal = document.getElementById('rev-sections').value.trim();
+      const hintEl = document.getElementById('concordance-hint');
+
+      if (!secVal) {
+        hintEl.innerText = '';
+        return;
+      }
+
+      const isBns = act.toLowerCase().includes('bns') || act.toLowerCase().includes('bharatiya');
+      if (secVal.includes('379')) {
+        hintEl.innerText = isBns ? 'Equivalent: IPC 379 (Theft)' : 'Equivalent: BNS Section 303(2) (Theft)';
+      } else if (secVal.includes('302')) {
+        hintEl.innerText = isBns ? 'Equivalent: IPC 302 (Murder)' : 'Equivalent: BNS Section 103(1) (Murder)';
+      } else if (secVal.includes('307')) {
+        hintEl.innerText = isBns ? 'Equivalent: IPC 307 (Attempt to murder)' : 'Equivalent: BNS Section 109 (Attempt to murder)';
+      } else if (secVal.includes('420') || secVal.includes('318')) {
+        hintEl.innerText = isBns ? 'Equivalent: IPC 420 (Cheating)' : 'Equivalent: BNS Section 318(4) (Cheating)';
+      } else {
+        hintEl.innerText = 'Concordance mapped to First Schedule CrPC / BNSS.';
+      }
+    }
+
+    // Handle Analysis
+    async function handleRunAnalysis() {
+      const btn = document.getElementById('btn-analyze');
+      btn.innerText = 'Running Analysis... ⚡';
+      btn.disabled = true;
+
+      const rawSections = document.getElementById('rev-sections').value.split(',').map(s => s.trim()).filter(s => s);
+      const reqPayload = {
+        case_title: document.getElementById('rev-title').value,
+        case_number: document.getElementById('rev-caseno').value,
+        filing_year: 2024,
+        state: document.getElementById('rev-state').options[document.getElementById('rev-state').selectedIndex].text.split(' ')[0],
+        state_code: parseInt(document.getElementById('rev-state').value),
+        district: document.getElementById('rev-district').value,
+        dist_code: 1,
+        court_name: document.getElementById('rev-district').value + ' Court',
+        court_no: 1,
+        act: document.getElementById('rev-act').value,
+        sections: rawSections.length > 0 ? rawSections : ['379'],
+        case_type: document.getElementById('rev-casetype').value,
+        judge_position: 'Civil Judge Junior Division',
+        judge_tenure_months: 14.0,
+        accused_count: 1,
+        custody_status: document.getElementById('rev-custody').value,
+        case_summary: document.getElementById('rev-summary').value,
+      };
+
+      try {
+        const res = await fetch('/case/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reqPayload)
+        });
+        if (!res.ok) throw new Error('Analysis request failed');
+        const data = await res.json();
+        renderResults(data);
+
+        document.getElementById('step-review').classList.add('hidden');
+        document.getElementById('step-results').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (err) {
+        alert('Analysis error: ' + err.message);
+      } finally {
+        btn.innerText = 'Confirm & Run 7-Section Analysis ⚡';
+        btn.disabled = false;
+      }
+    }
+
+    function renderResults(res) {
+      // Card 1 Glance
+      const g = res.glance;
+      document.getElementById('card1-title').innerText = g.case_title;
+      document.getElementById('card1-caseno').innerText = g.case_number;
+      document.getElementById('card1-court').innerText = g.district + ', ' + g.state;
+      document.getElementById('card1-sections').innerText = (g.sections || []).join(', ') + ' (' + (g.act.includes('BNS') ? 'BNS' : 'IPC') + ')';
+      document.getElementById('card1-summary').innerText = g.summary;
+
+      // Card 2 Duration
+      const d = res.duration_prediction;
+      const ontime = d.predicted_class === 'ontime';
+      const statusBox = document.getElementById('box-delay-status');
+      if (ontime) {
+        statusBox.className = 'p-6 rounded-2xl text-center space-y-2 border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300';
+        document.getElementById('icon-delay-status').innerText = '⚡';
+        document.getElementById('label-delay-category').innerText = 'Estimated Disposal';
+        document.getElementById('val-delay-status').innerText = 'Likely On-Time';
+        document.getElementById('desc-delay-status').innerText = 'Within statutory 24-month horizon';
+        document.getElementById('bar-delay-risk').className = 'h-3 rounded-full bg-emerald-500 transition-all duration-500';
+      } else {
+        statusBox.className = 'p-6 rounded-2xl text-center space-y-2 border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300';
+        document.getElementById('icon-delay-status').innerText = '⏳';
+        document.getElementById('label-delay-category').innerText = 'Estimated Disposal';
+        document.getElementById('val-delay-status').innerText = 'High Delay Risk';
+        document.getElementById('desc-delay-status').innerText = 'Expected duration exceeds 24 months';
+        document.getElementById('bar-delay-risk').className = 'h-3 rounded-full bg-rose-500 transition-all duration-500';
+      }
+
+      document.getElementById('val-expected-months').innerText = d.expected_duration_months.toFixed(1);
+      document.getElementById('val-expected-range').innerText = (d.duration_range_months[0]).toFixed(1) + ' – ' + (d.duration_range_months[1]).toFixed(1) + ' months';
+      document.getElementById('val-delay-risk-pct').innerText = d.delay_risk_pct.toFixed(1) + '%';
+      document.getElementById('bar-delay-risk').style.width = Math.min(100, Math.max(10, d.delay_risk_pct)) + '%';
+      document.getElementById('val-routed-model').innerText = 'Consensus Router: ' + d.routed_regressor;
+
+      // Card 3 Drivers
+      const driversContainer = document.getElementById('drivers-container');
+      driversContainer.innerHTML = '';
+      (res.delay_drivers || []).forEach(dr => {
+        const isUp = dr.direction.includes('Increases');
+        const card = document.createElement('div');
+        card.className = 'p-4 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 space-y-2';
+        card.innerHTML = `
+          <div class="flex justify-between items-start">
+            <span class="font-bold text-xs text-navy-950 dark:text-white">${dr.feature}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isUp ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'}">
+              ${isUp ? '+ Increases Duration' : '- Accelerates Disposal'}
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">${dr.description}</p>
+          <div class="text-[10px] font-semibold text-slate-400">Impact Weight: ${dr.impact}</div>
+        `;
+        driversContainer.appendChild(card);
+      });
+
+      // Card 4 Similar Cases
+      const sim = res.similar_cases;
+      document.getElementById('val-sim-matches').innerText = sim.total_historical_matches;
+      document.getElementById('val-sim-level').innerText = sim.match_level;
+      document.getElementById('val-sim-delay-rate').innerText = sim.historical_delay_pct.toFixed(1) + '%';
+      document.getElementById('val-sim-median').innerText = sim.median_duration_months.toFixed(1) + ' mo';
+
+      const tbody = document.getElementById('sim-cases-body');
+      tbody.innerHTML = '';
+      (sim.sample_cases || []).forEach(sc => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="px-4 py-3 font-mono font-bold text-navy-950 dark:text-white">${sc.case_id}</td>
+          <td class="px-4 py-3">${sc.year}</td>
+          <td class="px-4 py-3 font-mono">${sc.section}</td>
+          <td class="px-4 py-3 font-bold">${sc.duration_months.toFixed(1)} mo</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${sc.status === 'On-Time' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${sc.status}</span></td>
+          <td class="px-4 py-3 text-slate-500">${sc.disposition}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // Card 5 Bail
+      const bail = res.bail_assessment;
+      const bailBanner = document.getElementById('banner-bail-class');
+      if (bail.overall_bailable) {
+        bailBanner.className = 'p-5 rounded-2xl flex items-start gap-4 border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200';
+        document.getElementById('icon-bail-class').innerText = '✅';
+        document.getElementById('title-bail-class').innerText = 'Bailable Offence (Bail as a Matter of Right)';
+      } else {
+        bailBanner.className = 'p-5 rounded-2xl flex items-start gap-4 border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200';
+        document.getElementById('icon-bail-class').innerText = '⚠️';
+        document.getElementById('title-bail-class').innerText = 'Non-Bailable Offence (Subject to Judicial Discretion)';
+      }
+      document.getElementById('desc-bail-class').innerText = bail.summary;
+
+      // Provisions
+      const provList = document.getElementById('bail-provisions-list');
+      provList.innerHTML = '';
+      (bail.statutory_provisions || []).forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'border-l-2 border-gold-500 pl-2.5 py-0.5';
+        el.innerHTML = `
+          <strong class="text-navy-950 dark:text-white block text-xs">${p.section} · ${p.title}</strong>
+          <span class="text-[11px] text-slate-500 leading-snug block mt-0.5">${p.detail}</span>
+        `;
+        provList.appendChild(el);
+      });
+
+      // Factors
+      const facList = document.getElementById('bail-factors-list');
+      facList.innerHTML = '';
+      (bail.judicial_factors || []).forEach(f => {
+        const li = document.createElement('li');
+        li.innerText = f;
+        facList.appendChild(li);
+      });
+
+      // Timeline
+      const timeBody = document.getElementById('bail-timeline-body');
+      timeBody.innerHTML = '';
+      (bail.process_timeline_steps || []).forEach(st => {
+        const r = document.createElement('tr');
+        r.innerHTML = `
+          <td class="px-4 py-2.5 font-bold text-navy-950 dark:text-white">${st.stage}</td>
+          <td class="px-4 py-2.5 text-gold-600 dark:text-gold-400 font-semibold">${st.timing}</td>
+          <td class="px-4 py-2.5 text-slate-500">${st.action}</td>
+        `;
+        timeBody.appendChild(r);
+      });
+
+      // Card 6 Roadmap
+      const roadmapContainer = document.getElementById('roadmap-container');
+      roadmapContainer.innerHTML = '';
+      (res.procedural_roadmap || []).forEach(rm => {
+        const el = document.createElement('div');
+        el.className = 'p-4 rounded-2xl bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-800 flex items-start gap-3.5';
+        el.innerHTML = `
+          <div class="w-8 h-8 rounded-full bg-navy-900 text-white dark:bg-gold-500 dark:text-navy-950 flex items-center justify-center font-bold text-xs shrink-0">
+            ${rm.step}
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <h5 class="font-bold text-xs text-navy-950 dark:text-white">${rm.title}</h5>
+              <span class="px-2 py-0.2 rounded text-[10px] font-mono bg-slate-200 dark:bg-navy-800 text-slate-600 dark:text-slate-300">${rm.statute}</span>
+              <span class="text-[10px] text-gold-600 dark:text-gold-400 font-semibold ml-auto">${rm.duration_est}</span>
+            </div>
+            <p class="text-[11px] text-slate-500">${rm.description}</p>
+          </div>
+        `;
+        roadmapContainer.appendChild(el);
+      });
+    }
+
+    // Manual Simulation
+    function handleManualPredict(e) {
       e.preventDefault();
       const bailable = parseInt(document.getElementById('bailable_select').value);
       const tenure = parseFloat(document.getElementById('tenure_slider').value);
@@ -457,12 +1173,11 @@
       document.getElementById('res-range').innerText = (Math.max(1.0, dur - 4.5)).toFixed(1) + " – " + (parseFloat(dur) + 5.0).toFixed(1) + " months";
     }
 
-    // Set initial page
-    setPage('home');
+    // Set initial page to case analysis
+    setPage('analyze');
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.classList.add('dark');
     }
   </script>
 </body>
 </html>
-

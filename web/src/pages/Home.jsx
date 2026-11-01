@@ -22,10 +22,10 @@ export default function Home({ setActivePage }) {
 
         <div className="flex flex-wrap justify-center gap-4 pt-4">
           <button
-            onClick={() => setActivePage('predict')}
+            onClick={() => setActivePage('analyze')}
             className="px-6 py-3 rounded-xl bg-navy-900 hover:bg-navy-800 dark:bg-gold-500 dark:hover:bg-gold-400 text-white dark:text-navy-950 font-bold shadow-lg shadow-navy-900/10 dark:shadow-gold-500/20 flex items-center space-x-2 transition-all hover:scale-[1.02]"
           >
-            <span>Simulate Case Filing</span>
+            <span>Upload Case File for Analysis</span>
             <ArrowRight className="w-4 h-4" />
           </button>
           

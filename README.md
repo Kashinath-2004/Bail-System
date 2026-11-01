@@ -11,6 +11,31 @@ Production-grade replication of the research paper:
 
 ---
 
+## 📂 Case Document Upload & Citizen Analysis
+
+Justice AI features an end-to-end document analysis flow tailored for citizens and legal researchers:
+
+`
+[Upload Case PDF / DOCX / TXT or Paste] 
+                   ↓ 
+[In-Memory PII Redaction & Extraction with Page/Line Provenance]
+                   ↓
+[Human-in-the-Loop Review Screen with BNS <-> IPC Concordance]
+                   ↓
+[7-Section Citizen-Friendly Intelligence Report]
+  1. Case at a Glance (Summary, Parties, Court Venue, Sections)
+  2. Expected Duration & Delay Risk (Model 1c DRF -> Specialist Regressors)
+  3. Why Might It Be Delayed? (Plain-English TreeSHAP Drivers)
+  4. Similar Past Cases in Indian Courts (Structured DDL Records 2010–2018)
+  5. Can I Get Bail? (First Schedule CrPC/BNSS Statutory Determination)
+  6. What Happens Next? (Procedural Stage Roadmap: FIR -> Judgment)
+  7. About This Estimate & Legal Compliance Disclosure
+`
+
+Detailed documentation in [docs/CASE_ANALYSIS.md](docs/CASE_ANALYSIS.md).
+
+---
+
 ## 🏛️ System Architecture
 
 Instead of predicting court duration with a single monolithic model that fails on bimodal caseload distributions, Justice AI employs a **two-stage consensus hybrid architecture**:
