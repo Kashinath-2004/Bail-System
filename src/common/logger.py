@@ -59,3 +59,4 @@ def print_summary_table(rows: list, headers: list = None, title: str = "Pipeline
         print(f"\n--- {title} ---")
         for r in rows:
             print(" | ".join(str(x) for x in r))
+

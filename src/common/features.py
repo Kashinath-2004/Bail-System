@@ -76,3 +76,4 @@ def clean_h2o_features(df_h2o, drop_sensitive: bool = True, drop_target_cols: Op
             df_clean[factor_col] = df_clean[factor_col].asfactor()
 
     return df_clean
+

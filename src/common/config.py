@@ -42,3 +42,4 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
         _CONFIG_CACHE = config
 
     return config
+

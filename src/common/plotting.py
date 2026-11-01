@@ -58,3 +58,4 @@ def save_variable_importance_plot(model, output_path: Path):
             plt.close()
     except Exception:
         pass
+

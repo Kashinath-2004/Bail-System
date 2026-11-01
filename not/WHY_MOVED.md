@@ -23,3 +23,4 @@ In accordance with Hard Rule 1 ("NEVER delete anything. Anything unneeded goes i
 | `README.original.md` | Original 4-line repository README. | Replaced by comprehensive production README in root. Original preserved here for reference. |
 | `justice_data/dta/*` | Redundant Stata `.dta` format archives (~3.1 GB). | Not needed by pipeline since all ETL operates on CSVs. Preserved in `not/justice_data/dta/`. |
 | `justice_data/csv/*.tar.gz` | Redundant compressed archives of already-extracted CSV lookup keys and tables. | Preserved in `not/justice_data/csv/`. Active uncompressed CSV keys moved to `data/raw/keys/`. |
+

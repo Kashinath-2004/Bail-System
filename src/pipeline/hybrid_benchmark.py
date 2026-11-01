@@ -166,3 +166,4 @@ def run(config: Dict[str, Any] = None, sample: Optional[float] = None, skip_trai
     }
     logger.info(f"Approach 4 Benchmark: RMSE={summary_metrics['approach_4_consensus']['rmse']:.2f} mo, Accuracy={summary_metrics['approach_4_consensus']['accuracy']:.4f}")
     return summary_metrics
+

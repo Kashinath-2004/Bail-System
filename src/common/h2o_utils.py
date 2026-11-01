@@ -73,3 +73,4 @@ def load_mojo_or_model(model_path: Path):
     if p.suffix == ".zip":
         return h2o.import_mojo(str(p))
     return h2o.load_model(str(p))
+

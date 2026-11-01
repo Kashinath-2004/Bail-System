@@ -56,3 +56,4 @@ def run(config: Dict[str, Any] = None, sample: Optional[float] = None) -> Dict[s
     metrics["model"] = "LogisticRegression"
     logger.info(f"Sklearn Baseline Metrics: Accuracy={metrics['accuracy']:.4f}, F1={metrics['f1_score']:.2f}%")
     return metrics
+

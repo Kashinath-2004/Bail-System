@@ -102,3 +102,4 @@ class HybridRouter:
                 "status": "error",
                 "message": f"Inference error: {str(e)}"
             }
+

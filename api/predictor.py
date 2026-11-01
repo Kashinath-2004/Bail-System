@@ -116,3 +116,4 @@ class PredictorService:
                 "message": f"Inference execution failed: {str(e)}",
                 "model_trained": False
             }
+

@@ -71,3 +71,4 @@ export default function RiskGauge({ riskPct = 50, predictedClass = 'delayed' }) 
     </div>
   );
 }
+

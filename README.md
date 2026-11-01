@@ -160,3 +160,4 @@ Open your browser at: [http://localhost:3000](http://localhost:3000)
 * **Fairness Auditing**: Evaluated via two perturbation experiments:
   1. *Perturbation A*: Reassignment of missing demographic codes (negligible $\Delta t = 0.025$).
   2. *Perturbation B*: 10% gender flip sensitivity testing confirming that predictions are anchored in legal acts and procedural variables, not demographic proxies.
+

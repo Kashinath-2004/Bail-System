@@ -65,3 +65,4 @@ def run(config: Dict[str, Any] = None, sample: Optional[float] = None) -> Dict[s
         "delta_t_statistic": abs(ttest_post.get("t_statistic", 0) - ttest_pre.get("t_statistic", 0)),
         "stability_status": "robust" if abs(ttest_post.get("t_statistic", 0) - ttest_pre.get("t_statistic", 0)) < 0.5 else "sensitive"
     }
+

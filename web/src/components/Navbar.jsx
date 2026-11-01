@@ -89,3 +89,4 @@ export default function Navbar({ activePage, setActivePage, darkMode, setDarkMod
     </nav>
   );
 }
+
